@@ -18,6 +18,7 @@
   --amber:        #92400e;
   --blue:         #1d4ed8;
   --rose:         #be123c;
+  --orange:       #c2410c;
   --radius:       14px;
   --radius-sm:    8px;
   --nav-h:        60px;
@@ -396,6 +397,7 @@ body {
 .badge--theater { background: #fef3c7; color: var(--amber);  border-color: #fde68a; }
 .badge--pres    { background: #dbeafe; color: var(--blue);   border-color: #bfdbfe; }
 .badge--video   { background: #ffe4e6; color: var(--rose);   border-color: #fecdd3; }
+.badge--art     { background: #ffedd5; color: var(--orange); border-color: #fed7aa; }
 
 /* ─── MEMBERS ───────────────────────────────────────────────────────────── */
 .members {
