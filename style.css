@@ -140,6 +140,25 @@ body {
   font-weight: 400;
 }
 
+.hero-credit {
+  font-size: 0.875rem;
+  color: var(--black);
+  opacity: 0.5;
+  margin: -1.5rem auto 2rem;
+}
+.hero-credit a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.hero-credit a:hover { opacity: 0.8; }
+.ig-icon {
+  width: 0.95em;
+  height: 0.95em;
+  vertical-align: -0.1em;
+  margin-right: 0.2em;
+}
+
 .hero-ctas {
   display: flex;
   gap: 1rem;
