@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Put a spin on it!</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;700&family=Bebas+Neue&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#080808;
+  --cyan:#00f5ff;
+  --orange:#ff6600;
+  --gold:#d4a843;
+  --text:#d8d0c0;
+  --dim:#444;
+  --green:#00ff88;
+  --red:#ff4422;
+  --blue:#6699ff;
+}
+html{ scroll-behavior:smooth; scroll-snap-type:y mandatory; }
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Mono',monospace;
+  overflow-x:hidden;
+}
+
+/* ── FIXED CANVAS (always behind everything) ── */
+#main-canvas{
+  position:fixed;inset:0;width:100%;height:100%;
+  z-index:0;
+}
+
+/* ── HUD (top-left label, top-right zoom) ── */
+#hud-label{
+  position:fixed;top:32px;left:40px;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:42px;color:#fff;letter-spacing:3px;
+  text-shadow:0 0 30px rgba(0,245,255,0.35);
+  pointer-events:none;z-index:5;
+  opacity:0;transition:opacity 0.6s;
+}
+#hud-sub{
+  position:fixed;top:82px;left:42px;
+  font-size:9px;letter-spacing:2px;color:var(--cyan);opacity:0;
+  pointer-events:none;z-index:5;
+  transition:opacity 0.6s;
+}
+#hud-zoom{
+  position:fixed;top:32px;right:40px;text-align:right;
+  pointer-events:none;z-index:5;
+  opacity:0;transition:opacity 0.6s;
+}
+#zoom-val{ font-family:'Bebas Neue',sans-serif;font-size:30px;color:#b8a88a;display:block; }
+#zoom-lbl{ font-size:9px;letter-spacing:2px;color:var(--dim); }
+#hud-label.show, #hud-sub.show, #hud-zoom.show{ opacity:1; }
+#hud-sub.show{ opacity:0.55; }
+
+/* scroll progress */
+#scroll-progress{
+  position:fixed;top:0;left:0;height:2px;
+  background:linear-gradient(to right,var(--cyan),var(--orange));
+  z-index:30;width:0%;transition:width 0.1s linear;
+}
+
+/* ── SECTIONS ── */
+.section{
+  position:relative;
+  height:100vh;
+  display:flex;
+  align-items:center;
+  scroll-snap-align:start;
+  z-index:2;
+  pointer-events:none;
+}
+.section.center{ justify-content:center;text-align:center; }
+.section.right{ justify-content:flex-end; }
+.section.left{ justify-content:flex-start; }
+
+/* ── TEXT PANELS ── */
+.text-panel{
+  pointer-events:auto;
+  max-width:440px;
+  margin:0 52px;
+  padding:40px 44px;
+  background:rgba(4,4,10,0.88);
+  border:1px solid rgba(255,255,255,0.06);
+  backdrop-filter:blur(6px);
+  opacity:0;
+  transform:translateY(28px);
+  transition:opacity 0.75s ease, transform 0.75s ease;
+}
+.text-panel.visible{ opacity:1;transform:translateY(0); }
+.text-panel.b-cyan{ border-left:3px solid var(--cyan); }
+.text-panel.b-orange{ border-right:3px solid var(--orange); border-left:none; }
+.text-panel.b-gold{ border-left:3px solid var(--gold); }
+
+.section-eyebrow{
+  font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  margin-bottom:14px;opacity:0.7;
+}
+.section-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:40px;letter-spacing:2px;line-height:1.05;
+  color:#fff;margin-bottom:20px;
+}
+.section-body{
+  font-size:11.5px;line-height:1.9;color:#7a7268;
+}
+.section-body strong{ color:var(--text); }
+.hl-c{ color:var(--cyan); }
+.hl-o{ color:var(--orange); }
+.hl-g{ color:var(--green); }
+.hl-b{ color:var(--blue); }
+.hl-r{ color:var(--red); }
+
+/* ── HERO ── */
+#hero-inner{
+  pointer-events:none;
+  text-align:center;padding:0 24px;
+}
+#hero-inner h1{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(56px,9vw,108px);
+  letter-spacing:6px;color:#fff;
+  text-shadow:0 0 80px rgba(0,245,255,0.25),0 0 160px rgba(0,245,255,0.08);
+  margin-bottom:18px;line-height:0.95;
+}
+#hero-inner .eyebrow{
+  font-size:10px;letter-spacing:4px;color:var(--cyan);opacity:0.65;margin-bottom:12px;
+}
+#hero-inner .tagline{
+  font-size:13px;color:#555;max-width:460px;margin:0 auto 44px;line-height:1.85;
+}
+#scroll-hint{
+  font-size:9px;letter-spacing:3px;color:#2a2a2a;
+  animation:blink 2.8s infinite;
+}
+@keyframes blink{0%,100%{opacity:0.2}50%{opacity:0.8}}
+
+/* ── DEMO SECTION (last section — full viewport, no scroll-snap) ── */
+#demo-section{
+  position:relative;
+  height:100vh;
+  scroll-snap-align:start;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  pointer-events:none;
+}
+
+/* Demo nav (bottom bar, identical to original qubit_chip_temp) */
+#demo-nav{
+  pointer-events:auto;
+  position:absolute;bottom:0;left:0;right:0;
+  padding:18px 36px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  background:linear-gradient(transparent,rgba(0,0,0,0.97));
+  z-index:20;
+  opacity:0;transition:opacity 0.8s;
+}
+#demo-nav.show{ opacity:1; }
+
+.sbtn{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  letter-spacing:2px;text-transform:uppercase;
+  padding:11px 22px;border:1px solid #2a2a2a;
+  background:rgba(255,255,255,0.02);color:#555;
+  cursor:pointer;transition:all 0.2s;
+}
+.sbtn:hover{color:#fff;border-color:#555;}
+.sbtn.on{color:var(--cyan);border-color:var(--cyan);background:rgba(0,245,255,0.05);}
+
+#field-btn{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  letter-spacing:2px;text-transform:uppercase;
+  padding:11px 22px;
+  border:1px solid var(--orange);background:rgba(255,102,0,0.05);
+  color:var(--orange);cursor:pointer;transition:all 0.2s;
+}
+#field-btn:hover{background:rgba(255,102,0,0.15);}
+#field-btn.on{background:rgba(255,102,0,0.15);color:#fff;border-color:#ff9944;box-shadow:0 0 18px rgba(255,120,0,0.2);}
+
+/* Temperature panel sits above the nav */
+#temp-panel{
+  pointer-events:auto;
+  position:absolute;bottom:80px;left:0;right:0;
+  padding:16px 36px 0;
+  display:flex;align-items:center;gap:28px;flex-wrap:wrap;
+  z-index:19;
+  opacity:0;transition:opacity 0.8s 0.2s;
+}
+#temp-panel.show{ opacity:1; }
+
+#temp-left{
+  display:flex;flex-direction:column;gap:3px;min-width:110px;
+}
+#temp-display{
+  font-family:'Bebas Neue',sans-serif;font-size:34px;
+  letter-spacing:2px;line-height:1;transition:color 0.5s;
+}
+#temp-lbl{ font-size:8px;letter-spacing:3px;color:var(--dim); }
+
+#temp-slider-block{
+  flex:1;min-width:240px;max-width:480px;
+  display:flex;flex-direction:column;gap:7px;
+}
+#temp-slider-row{ display:flex;align-items:center;gap:12px; }
+#temp-slider{
+  flex:1;-webkit-appearance:none;appearance:none;
+  height:5px;border-radius:3px;outline:none;cursor:pointer;
+  background:linear-gradient(to right,#0a22aa,#1144ff 5%,#00f5ff 28%,#00ff88 50%,#ffaa00 72%,#ff3300 90%,#cc1100);
+}
+#temp-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:17px;height:17px;border-radius:50%;
+  background:#fff;border:2px solid #444;cursor:pointer;
+  box-shadow:0 0 10px rgba(255,255,255,0.5);
+}
+.t-end{ font-size:9px;color:#333;letter-spacing:1px;white-space:nowrap; }
+#temp-zones{
+  display:flex;position:relative;font-size:8px;letter-spacing:1px;height:13px;
+}
+#z-cold{ position:absolute;left:0;color:#6699ff;opacity:0.6; }
+#z-sweet{ position:absolute;left:28%;transform:translateX(-50%);color:#00ff88;opacity:0.6; }
+#z-hot{ position:absolute;right:0;color:#ff4422;opacity:0.6; }
+
+#temp-regime-desc{
+  flex:1;font-size:10px;line-height:1.65;
+  border-left:2px solid #181818;padding-left:16px;
+  transition:color 0.5s;
+}
+#temp-regime-badge{
+  display:inline-block;font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  padding:3px 10px;margin-bottom:5px;border-radius:2px;border:1px solid #1a1a1a;
+  transition:all 0.5s;
+}
+
+#demo-caption{
+  flex:1;font-size:11px;line-height:1.6;color:#444;
+  padding-left:16px;border-left:1px solid #1a1a1a;max-width:440px;
+}
+</style>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+<canvas id="main-canvas"></canvas>
+
+<!-- HUD (shows from section 2 onward) -->
+<div id="hud-label">SILICON CHIP</div>
+<div id="hud-sub">// macro view // 12mm × 12mm die</div>
+<div id="hud-zoom">
+  <span id="zoom-val">1×</span>
+  <span id="zoom-lbl">MAGNIFICATION</span>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SECTION 1: HERO                           -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section center" id="s-hero" data-idx="0">
+  <div id="hero-inner">
+    <div class="eyebrow">// quantum computing //</div>
+    <h1>SILICON<br>SPIN<br>QUBITS</h1>
+    <div class="tagline">How a single electron trapped inside silicon becomes a quantum bit — and why temperature is everything.</div>
+    <div id="scroll-hint">↓ &nbsp; scroll to explore &nbsp; ↓</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SECTION 2: THE CHIP                       -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section right" id="s-chip" data-idx="1">
+  <div class="text-panel b-cyan">
+    <div class="section-eyebrow" style="color:var(--cyan)">01 — The Chip</div>
+    <div class="section-title">A COMPUTER CHIP, COOLED TO NEAR NOTHING</div>
+    <div class="section-body">
+      This is a silicon chip — similar to the ones inside every laptop and phone. But this one has been engineered down to the nanometre scale to hold a new kind of computer: a <strong>quantum computer</strong>.<br><br>
+      The highlighted region is the <span class="hl-c">qubit array</span> — a tiny patch of silicon where individual electrons can be isolated and used as quantum bits.<br><br>
+      To work, the chip must be cooled to temperatures colder than outer space. We'll get to why.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SECTION 3: QUANTUM DOTS                   -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section left" id="s-dots" data-idx="2">
+  <div class="text-panel b-orange">
+    <div class="section-eyebrow" style="color:var(--orange)">02 — Inside the Array</div>
+    <div class="section-title">GATES, DOTS AND TRAPPED ELECTRONS</div>
+    <div class="section-body">
+      Zooming in, we find rows of <span class="hl-o">metal gate electrodes</span> — gold pads on the silicon surface. When voltage is applied, they push an electric field downward, carving a tiny energy trap in the silicon below.<br><br>
+      Each trap is a <strong>quantum dot</strong> — about 30 nanometres wide. Free electrons drifting across the surface can be pulled inside.<br><br>
+      Once trapped, each electron carries a property called <strong>spin</strong> — it points either <span class="hl-c">up ↑</span> or <span class="hl-o">down ↓</span>. That spin is your qubit. It can be <span class="hl-c">0</span>, <span class="hl-o">1</span>, or — unlike any classical bit — <strong>both at once</strong>.<br><br>
+      But the whole thing only works at exactly the right temperature. <span class="hl-o">Try it yourself →</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SECTION 4: INTERACTIVE DEMO               -->
+<!-- ══════════════════════════════════════════ -->
+<div id="demo-section" data-idx="3">
+
+  <!-- Temperature panel (above nav bar) -->
+  <div id="temp-panel">
+    <div id="temp-left">
+      <div id="temp-display">50 mK</div>
+      <div id="temp-lbl">Temperature</div>
+    </div>
+    <div id="temp-slider-block">
+      <div id="temp-slider-row">
+        <span class="t-end">0 mK</span>
+        <input type="range" id="temp-slider" min="0" max="200" value="50" step="1">
+        <span class="t-end">200 mK</span>
+      </div>
+      <div id="temp-zones">
+        <span id="z-cold">❄ TOO COLD</span>
+        <span id="z-sweet">✦ SWEET SPOT</span>
+        <span id="z-hot">🔥 TOO HOT</span>
+      </div>
+    </div>
+    <div id="temp-regime-desc">
+      <div id="temp-regime-badge">SWEET SPOT</div>
+      <div id="temp-regime-text">Each dot captures one electron. Spin qubits are stable and ready for quantum operations.</div>
+    </div>
+  </div>
+
+  <!-- Nav bar (identical feel to original) -->
+  <div id="demo-nav">
+    <button class="sbtn on"  id="btn0" onclick="goStage(0)">① Chip</button>
+    <button class="sbtn"     id="btn1" onclick="goStage(1)">② Zoom In</button>
+    <button class="sbtn"     id="btn2" onclick="goStage(2)">③ Quantum Dots</button>
+    <button class="sbtn"     id="btn3" onclick="goStage(3)">④ Electrons</button>
+    <button id="field-btn"   onclick="toggleField()">⚡ Turn On Electric Field</button>
+    <div id="demo-caption">Use the temperature slider and electric field button to explore how silicon spin qubits work.</div>
+  </div>
+
+</div>
+
+<!-- small bottom spacer so last section can snap fully -->
+<div style="height:1px;scroll-snap-align:none;"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CANVAS
+// ═══════════════════════════════════════════════════
+const canvas = document.getElementById('main-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H;
+function resize(){ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+resize(); window.addEventListener('resize', resize);
+
+// ═══════════════════════════════════════════════════
+// SIM STATE
+// ═══════════════════════════════════════════════════
+let stage = 0, zoomT = 0, zoomTarget = 0;
+let fieldOn = false, fieldT = 0, tick = 0;
+let freeElectrons = [], trapElectrons = [];
+const NUM_DOTS = 4;
+let tempMK = 50, regime = 'sweet', hotEscapeTimer = 0;
+
+// ═══════════════════════════════════════════════════
+// TEMPERATURE
+// ═══════════════════════════════════════════════════
+function getRegime(t){ return t<10?'cold':t<=100?'sweet':'hot'; }
+
+const regimeInfo = {
+  cold:{
+    badge:'❄ TOO COLD',
+    badgeColor:'#6699ff', badgeBorder:'rgba(100,150,255,0.25)', badgeBg:'rgba(60,80,200,0.08)',
+    text:'Electrons are frozen — they can\'t move into the quantum dots even with the field on. No qubits form.',
+    dispColor:'#6699ff'
+  },
+  sweet:{
+    badge:'✦ SWEET SPOT  10–100 mK',
+    badgeColor:'#00ff88', badgeBorder:'rgba(0,255,136,0.25)', badgeBg:'rgba(0,200,100,0.06)',
+    text:'Each quantum dot captures exactly one electron. Spin qubits are stable and ready for quantum operations.',
+    dispColor:'#00f5ff'
+  },
+  hot:{
+    badge:'🔥 TOO HOT',
+    badgeColor:'#ff5533', badgeBorder:'rgba(255,80,40,0.25)', badgeBg:'rgba(200,60,0,0.08)',
+    text:'Too much thermal energy. Electrons briefly enter quantum dots but immediately escape. Quantum states collapse.',
+    dispColor:'#ff6633'
+  }
+};
+
+function updateTempUI(){
+  const r   = getRegime(tempMK);
+  const prev= regime; regime = r;
+  const inf = regimeInfo[r];
+  const disp= document.getElementById('temp-display');
+  const badg= document.getElementById('temp-regime-badge');
+  const rtxt= document.getElementById('temp-regime-text');
+  disp.textContent = tempMK<1?'< 1 mK':tempMK+' mK';
+  disp.style.color = inf.dispColor;
+  badg.textContent = inf.badge; badg.style.color=inf.badgeColor;
+  badg.style.borderColor=inf.badgeBorder; badg.style.background=inf.badgeBg;
+  rtxt.textContent  = inf.text;
+  if(r!==prev) onRegimeChange(r);
+  updateDemoCaption();
+}
+
+function onRegimeChange(r){
+  trapElectrons=[]; freeElectrons.forEach(e=>e.captured=false);
+  if(r==='hot')         spawnFree(true,false);
+  else if(r==='cold')   spawnFree(false,true);
+  else { spawnFree(false,false); if(fieldOn&&stage>=2) captureElectrons(); }
+}
+
+document.getElementById('temp-slider').addEventListener('input',e=>{
+  tempMK=parseInt(e.target.value); updateTempUI();
+});
+
+// ═══════════════════════════════════════════════════
+// DOT POSITIONS
+// ═══════════════════════════════════════════════════
+function dotPos(){
+  const cx=W/2, cy=H/2-25, sp=Math.min(W,H)*0.17;
+  return[
+    {x:cx-sp,y:cy-sp*0.55},{x:cx+sp,y:cy-sp*0.55},
+    {x:cx-sp,y:cy+sp*0.55},{x:cx+sp,y:cy+sp*0.55}
+  ];
+}
+
+// ═══════════════════════════════════════════════════
+// FREE ELECTRON
+// ═══════════════════════════════════════════════════
+class FreeElectron{
+  constructor(hot,cold){
+    const cx=W/2,cy=H/2,sp=Math.min(W,H)*0.35;
+    this.x=cx+(Math.random()-0.5)*sp*1.8;
+    this.y=cy+(Math.random()-0.5)*sp*1.4;
+    const s=hot?2.5:cold?0.04:0.5;
+    this.vx=(Math.random()-0.5)*s; this.vy=(Math.random()-0.5)*s;
+    this.r=4+Math.random()*3; this.phase=Math.random()*Math.PI*2;
+    this.spin=Math.random()<0.5?1:-1; this.spinA=Math.random()*Math.PI*2;
+    this.alpha=Math.random()*0.7; this.captured=false;
+    this.hot=hot||false; this.cold=cold||false;
+  }
+  update(){
+    this.phase+=this.hot?0.07:this.cold?0.005:0.025;
+    this.spinA+=(this.hot?0.18:this.cold?0.002:0.05)*this.spin;
+    if(this.alpha<0.85) this.alpha=Math.min(0.85,this.alpha+0.015);
+    if(this.captured) return;
+    const nf=this.hot?0.22:this.cold?0.002:0.06;
+    this.vx+=(Math.random()-0.5)*nf; this.vy+=(Math.random()-0.5)*nf;
+    const drag=this.hot?0.992:this.cold?0.985:0.97;
+    this.vx*=drag; this.vy*=drag; this.x+=this.vx; this.y+=this.vy;
+    const spread=Math.min(W,H)*(this.hot?0.55:0.42);
+    const dx=this.x-W/2,dy=this.y-H/2,dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist>spread){this.vx-=dx/dist*0.25;this.vy-=dy/dist*0.25;}
+  }
+  draw(alpha){
+    if(alpha*this.alpha<0.01) return;
+    const col=this.cold?'120,160,255':this.hot?'255,110,50':this.spin>0?'60,130,255':'255,110,50';
+    const ps=this.cold?0.5:this.hot?3.5:1;
+    ctx.globalAlpha=alpha*this.alpha*(0.55+0.45*Math.abs(Math.sin(this.phase*ps)));
+    const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r*4.5);
+    g.addColorStop(0,`rgba(${col},0.3)`);g.addColorStop(1,'transparent');
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r*4.5,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${col},0.95)`;ctx.shadowBlur=10;ctx.shadowColor=`rgba(${col},0.8)`;
+    ctx.fill();ctx.shadowBlur=0;
+    if(this.cold){
+      ctx.globalAlpha=alpha*this.alpha*0.35;
+      ctx.strokeStyle='rgba(180,210,255,0.6)';ctx.lineWidth=0.8;
+      for(let a=0;a<3;a++){
+        const ang=a*(Math.PI/3)+this.spinA*0.1;
+        ctx.beginPath();
+        ctx.moveTo(this.x+Math.cos(ang)*(this.r+1),this.y+Math.sin(ang)*(this.r+1));
+        ctx.lineTo(this.x+Math.cos(ang)*(this.r+6),this.y+Math.sin(ang)*(this.r+6));ctx.stroke();
+      }
+    } else {
+      const sa=this.spinA;
+      ctx.globalAlpha=alpha*this.alpha*0.6;
+      ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=1.2;
+      ctx.beginPath();
+      ctx.moveTo(this.x+Math.cos(sa)*(this.r+1),this.y+Math.sin(sa)*(this.r+1));
+      ctx.lineTo(this.x+Math.cos(sa)*(this.r+6),this.y+Math.sin(sa)*(this.r+6));ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// TRAP ELECTRON
+// ═══════════════════════════════════════════════════
+class TrapElectron{
+  constructor(dotIdx,sx,sy,spin){
+    const dp=dotPos();
+    this.tx=dp[dotIdx].x+(Math.random()-0.5)*10;
+    this.ty=dp[dotIdx].y+(Math.random()-0.5)*8;
+    this.x=sx;this.y=sy;this.spin=spin;this.r=6;
+    this.landed=false;this.landT=0;this.orbitA=Math.random()*Math.PI*2;
+    this.trail=[];this.alpha=0;this.phase=Math.random()*Math.PI*2;
+  }
+  update(){
+    this.phase+=0.05;this.alpha=Math.min(1,this.alpha+0.03);
+    if(!this.landed){
+      this.landT=Math.min(1,this.landT+0.02);
+      this.x+=(this.tx-this.x)*0.05;this.y+=(this.ty-this.y)*0.05;
+      this.trail.push({x:this.x,y:this.y});
+      if(this.trail.length>22) this.trail.shift();
+      if(this.landT>0.97){this.landed=true;this.trail=[];}
+    } else {
+      this.orbitA+=0.055*this.spin;
+      this.x=this.tx+Math.cos(this.orbitA)*9;
+      this.y=this.ty+Math.sin(this.orbitA)*5;
+    }
+  }
+  draw(alpha){
+    if(alpha*this.alpha<0.01) return;
+    for(let i=0;i<this.trail.length;i++){
+      const tp=this.trail[i];
+      ctx.globalAlpha=(i/this.trail.length)*0.45*alpha*this.alpha;
+      ctx.beginPath();ctx.arc(tp.x,tp.y,2.5,0,Math.PI*2);
+      ctx.fillStyle=this.spin>0?'#4488ff':'#ff6633';ctx.fill();
+    }
+    ctx.globalAlpha=alpha*this.alpha;
+    const col=this.spin>0?'50,120,255':'255,90,40';
+    const grd=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r*3.5);
+    grd.addColorStop(0,`rgba(${col},0.45)`);grd.addColorStop(1,'transparent');
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r*3.5,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+    ctx.beginPath();ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(${col},1)`;ctx.shadowBlur=16;ctx.shadowColor=`rgba(${col},1)`;
+    ctx.fill();ctx.shadowBlur=0;
+    if(this.landed){
+      const sd=this.spin>0?-1:1;
+      ctx.strokeStyle='rgba(255,255,255,0.9)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(this.x,this.y+sd*(this.r+2));ctx.lineTo(this.x,this.y+sd*(this.r+13));ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(this.x,this.y+sd*(this.r+2));
+      ctx.lineTo(this.x-4,this.y+sd*(this.r+8));ctx.lineTo(this.x+4,this.y+sd*(this.r+8));
+      ctx.closePath();ctx.fillStyle='rgba(255,255,255,0.9)';ctx.fill();
+      ctx.beginPath();ctx.ellipse(this.tx,this.ty,12,7,0,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(${col},0.22)`;ctx.lineWidth=1;ctx.stroke();
+      ctx.font='11px IBM Plex Mono';ctx.fillStyle=`rgba(${col},0.9)`;ctx.textAlign='center';
+      ctx.fillText(this.spin>0?'up':'down',this.x,this.y+sd*(this.r+26));
+    }
+    ctx.globalAlpha=1;
+  }
+}
+
+function spawnFree(hot,cold){
+  freeElectrons=[];
+  const n=hot?28:cold?14:20;
+  for(let i=0;i<n;i++) freeElectrons.push(new FreeElectron(hot,cold));
+}
+function captureElectrons(){
+  if(regime!=='sweet') return;
+  trapElectrons=[];
+  const avail=freeElectrons.filter(e=>!e.captured);
+  for(let i=0;i<NUM_DOTS;i++){
+    const src=avail[i]||freeElectrons[i%freeElectrons.length];
+    if(src) src.captured=true;
+    trapElectrons.push(new TrapElectron(i,src?src.x:W/2,src?src.y:H/2,src?src.spin:(Math.random()<0.5?1:-1)));
+  }
+}
+function captureHot(){
+  trapElectrons=[];
+  const n=1+Math.floor(Math.random()*2);
+  const avail=freeElectrons.filter(e=>!e.captured);
+  for(let i=0;i<n;i++){
+    const src=avail[i]||freeElectrons[i%freeElectrons.length];
+    if(src) src.captured=true;
+    trapElectrons.push(new TrapElectron(Math.floor(Math.random()*NUM_DOTS),src?src.x:W/2,src?src.y:H/2,src?src.spin:1));
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// STAGE CONTROL (used by demo nav buttons)
+// ═══════════════════════════════════════════════════
+const stageConf=[
+  {label:'SILICON CHIP',  sub:'// macro view // 12mm × 12mm die',      zoom:'1×'},
+  {label:'ZOOMING IN',    sub:'// qubit array // 200μm × 200μm',        zoom:'600×'},
+  {label:'QUANTUM DOTS',  sub:'// confinement wells // 30nm diameter',  zoom:'10,000×'},
+  {label:'SPIN QUBITS',   sub:'// each trapped electron = 1 qubit',     zoom:'10,000×'},
+];
+
+function goStage(s){
+  stage=s;
+  const c=stageConf[s];
+  document.getElementById('hud-label').textContent=c.label;
+  document.getElementById('hud-sub').textContent=c.sub;
+  document.getElementById('zoom-val').textContent=c.zoom;
+  zoomTarget=s===0?0:s===1?0.48:1;
+  for(let i=0;i<4;i++){
+    document.getElementById(`btn${i}`).className='sbtn'+(i===s?' on':'');
+  }
+  document.getElementById('field-btn').style.display=s>=2?'inline-block':'none';
+  if(s<3){
+    fieldOn=false;
+    const fb=document.getElementById('field-btn');
+    fb.textContent='⚡ Turn On Electric Field'; fb.classList.remove('on');
+    trapElectrons=[]; freeElectrons.forEach(e=>e.captured=false);
+  }
+  if(s>=2&&freeElectrons.length===0) spawnFree(regime==='hot',regime==='cold');
+  updateDemoCaption();
+}
+
+function toggleField(){
+  fieldOn=!fieldOn;
+  const fb=document.getElementById('field-btn');
+  if(fieldOn){
+    fb.textContent='⚡ Electric Field ON'; fb.classList.add('on');
+    if(stage<2) goStage(2);
+    if(freeElectrons.length===0) spawnFree(regime==='hot',regime==='cold');
+    if(regime==='sweet'){ if(trapElectrons.length===0) captureElectrons(); if(stage<3) goStage(3); }
+    else if(regime==='hot'){ captureHot(); if(stage<3) goStage(3); }
+    else if(regime==='cold' && stage<3) goStage(3);
+  } else {
+    fb.textContent='⚡ Turn On Electric Field'; fb.classList.remove('on');
+    trapElectrons=[]; freeElectrons.forEach(e=>e.captured=false);
+  }
+  updateDemoCaption();
+}
+
+const demoCaptions={
+  0:{sweet:'A silicon chip cooled to near absolute zero. The highlighted qubit array region contains the quantum world.',cold:'A silicon chip cooled to near absolute zero — currently too cold even for qubit operation.',hot:'A silicon chip too warm for quantum operation. Thermal noise would destroy qubit states.'},
+  1:{sweet:'Metal gate electrodes sit on the silicon surface. When voltage is applied, they push electric fields into the silicon below.',cold:'Gate electrodes visible. At this temperature electrons are frozen and unresponsive.',hot:'Gate electrodes visible. At this temperature, thermal fluctuations overwhelm the electric fields.'},
+  2:{sweet:'Quantum dots are visible — 30nm energy traps. Free electrons drift nearby. Turn on the field to capture them.',cold:'Quantum dots are visible. Electrons drift sluggishly — too cold to be pulled in even with the field on.',hot:'Quantum dots visible. Electrons are hyperactive from heat. The field can only briefly catch 1–2 before they escape.'},
+  3:{sweet:'Each dot holds one electron. Its spin — up or down — is the qubit. Blue = spin up, orange = spin down.',cold:'Electrons are frozen across the substrate. The electric field cannot pull them into the dots. Raise the temperature above 10 mK.',hot:'Thermal energy causes rapid decoherence. Electrons escape almost instantly. Lower temperature below 100 mK for stable qubits.'},
+};
+function updateDemoCaption(){
+  const cap=demoCaptions[stage];
+  if(cap) document.getElementById('demo-caption').textContent=cap[regime]||cap.sweet;
+}
+
+// ═══════════════════════════════════════════════════
+// DRAW FUNCTIONS
+// ═══════════════════════════════════════════════════
+function drawChip(alpha){
+  if(alpha<0.01)return;
+  ctx.globalAlpha=alpha;
+  const dieW=Math.min(W,H)*0.60,dieH=dieW*0.82;
+  const dx=W/2-dieW/2,dy=H/2-dieH/2-15;
+  const dg=ctx.createLinearGradient(dx,dy,dx+dieW,dy+dieH);
+  dg.addColorStop(0,'#1c1c30');dg.addColorStop(0.5,'#141420');dg.addColorStop(1,'#0e0e1c');
+  ctx.fillStyle=dg;ctx.fillRect(dx,dy,dieW,dieH);
+  ctx.strokeStyle='#2a2a46';ctx.lineWidth=2;ctx.strokeRect(dx,dy,dieW,dieH);
+  ctx.lineWidth=0.5;
+  for(let i=1;i<20;i++){ctx.strokeStyle=`rgba(200,184,154,${i%4===0?0.2:0.07})`;ctx.beginPath();ctx.moveTo(dx,dy+i*dieH/20);ctx.lineTo(dx+dieW,dy+i*dieH/20);ctx.stroke();}
+  for(let i=1;i<24;i++){ctx.strokeStyle=`rgba(200,184,154,${i%4===0?0.2:0.07})`;ctx.beginPath();ctx.moveTo(dx+i*dieW/24,dy);ctx.lineTo(dx+i*dieW/24,dy+dieH);ctx.stroke();}
+  const blocks=[
+    {rx:0.04,ry:0.05,rw:0.27,rh:0.40,c:'#001133',label:'CONTROL\nLOGIC',hi:false},
+    {rx:0.69,ry:0.05,rw:0.27,rh:0.40,c:'#002211',label:'READOUT',hi:false},
+    {rx:0.04,ry:0.55,rw:0.35,rh:0.40,c:'#110022',label:'CRYO\nINTERFACE',hi:false},
+    {rx:0.61,ry:0.55,rw:0.35,rh:0.40,c:'#221100',label:'AMPLIFIER',hi:false},
+    {rx:0.31,ry:0.14,rw:0.38,rh:0.60,c:'#001122',label:'QUBIT\nARRAY',hi:true},
+  ];
+  for(const b of blocks){
+    const bx=dx+b.rx*dieW,by=dy+b.ry*dieH,bw=b.rw*dieW,bh=b.rh*dieH;
+    ctx.fillStyle=b.c;ctx.globalAlpha=alpha*(b.hi?0.75:0.55);ctx.fillRect(bx,by,bw,bh);
+    ctx.globalAlpha=alpha;
+    const p=0.5+0.5*Math.sin(tick*0.05);
+    ctx.strokeStyle=b.hi?`rgba(0,245,255,${0.3+p*0.4})`:'rgba(200,184,154,0.12)';
+    ctx.lineWidth=b.hi?1.5:0.5;ctx.strokeRect(bx,by,bw,bh);
+    ctx.font=`${b.hi?9:8}px IBM Plex Mono`;
+    ctx.fillStyle=b.hi?`rgba(0,245,255,0.7)`:'rgba(200,184,154,0.35)';ctx.textAlign='center';
+    b.label.split('\n').forEach((ln,li,arr)=>ctx.fillText(ln,bx+bw/2,by+bh/2-(arr.length-1)*7+li*14));
+  }
+  const padS=9;ctx.fillStyle='#d4a843';ctx.strokeStyle='#a07020';ctx.lineWidth=0.5;
+  for(let i=0;i<14;i++){const px=dx+dieW/15*(i+1);ctx.fillRect(px-padS/2,dy-padS-3,padS,padS);ctx.strokeRect(px-padS/2,dy-padS-3,padS,padS);ctx.fillRect(px-padS/2,dy+dieH+3,padS,padS);ctx.strokeRect(px-padS/2,dy+dieH+3,padS,padS);}
+  for(let i=0;i<10;i++){const py=dy+dieH/11*(i+1);ctx.fillRect(dx-padS-3,py-padS/2,padS,padS);ctx.strokeRect(dx-padS-3,py-padS/2,padS,padS);ctx.fillRect(dx+dieW+3,py-padS/2,padS,padS);ctx.strokeRect(dx+dieW+3,py-padS/2,padS,padS);}
+  if(stage>=1||scrollSection>=1){
+    const bx=dx+0.31*dieW,by=dy+0.14*dieH,bw=0.38*dieW,bh=0.60*dieH;
+    const p=0.5+0.5*Math.sin(tick*0.06);
+    ctx.strokeStyle=`rgba(0,245,255,${0.4+p*0.5})`;ctx.lineWidth=2.5;ctx.strokeRect(bx-4,by-4,bw+8,bh+8);
+    ctx.font='10px IBM Plex Mono';ctx.fillStyle=`rgba(0,245,255,${0.6+p*0.3})`;ctx.textAlign='center';
+    ctx.fillText('ZOOM TARGET',bx+bw/2,by-12);
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawSubstrate(alpha){
+  if(alpha<0.01)return;
+  const c0=regime==='cold'?'#081428':regime==='hot'?'#1a0c08':'#0c1828';
+  const c1=regime==='cold'?'#030810':regime==='hot'?'#0d0604':'#060c14';
+  const sg=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.65);
+  sg.addColorStop(0,c0);sg.addColorStop(1,c1);
+  ctx.globalAlpha=alpha;ctx.fillStyle=sg;ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
+  ctx.globalAlpha=alpha*0.6;ctx.lineWidth=0.4;
+  const gc=regime==='cold'?'20,60,140':'20,60,100';
+  for(let x=0;x<W;x+=26){ctx.strokeStyle=`rgba(${gc},0.3)`;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=26){ctx.strokeStyle=`rgba(${gc},0.3)`;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  ctx.globalAlpha=1;
+}
+
+function drawGates(alpha){
+  if(alpha<0.01)return;
+  const dp=dotPos();ctx.globalAlpha=alpha;
+  for(let i=0;i<dp.length;i++){
+    const d=dp[i],gw=66,gh=48,gy=d.y-gh-30;
+    const mg=ctx.createLinearGradient(d.x-gw/2,gy,d.x+gw/2,gy+gh);
+    mg.addColorStop(0,'rgba(220,185,90,0.95)');mg.addColorStop(1,'rgba(160,120,50,0.85)');
+    ctx.fillStyle=mg;ctx.fillRect(d.x-gw/2,gy,gw,gh);
+    ctx.strokeStyle='rgba(220,185,90,0.85)';ctx.lineWidth=1;ctx.strokeRect(d.x-gw/2,gy,gw,gh);
+    ctx.font='9px IBM Plex Mono';ctx.fillStyle='rgba(0,0,0,0.75)';ctx.textAlign='center';
+    ctx.fillText('GATE',d.x,gy+gh/2-5);ctx.fillText(`Q${i+1}`,d.x,gy+gh/2+8);
+    ctx.strokeStyle='rgba(220,185,90,0.3)';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(d.x,gy+gh);ctx.lineTo(d.x,d.y-6);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawDots(alpha){
+  if(alpha<0.01)return;
+  const dp=dotPos();
+  for(let i=0;i<dp.length;i++){
+    const d=dp[i],R=38;ctx.globalAlpha=alpha;
+    const wg=ctx.createRadialGradient(d.x,d.y+10,2,d.x,d.y,R);
+    wg.addColorStop(0,regime==='cold'?'rgba(0,15,60,0.98)':'rgba(0,30,70,0.98)');
+    wg.addColorStop(0.45,'rgba(0,18,50,0.88)');wg.addColorStop(0.8,'rgba(0,8,28,0.5)');wg.addColorStop(1,'transparent');
+    ctx.beginPath();ctx.arc(d.x,d.y,R,0,Math.PI*2);ctx.fillStyle=wg;ctx.fill();
+    const rg=ctx.createRadialGradient(d.x,d.y,R*0.65,d.x,d.y,R*1.15);
+    rg.addColorStop(0,'transparent');rg.addColorStop(0.8,'rgba(0,80,200,0.28)');rg.addColorStop(1,'rgba(0,130,255,0.12)');
+    ctx.beginPath();ctx.arc(d.x,d.y,R,0,Math.PI*2);ctx.fillStyle=rg;ctx.fill();
+    ctx.beginPath();ctx.arc(d.x,d.y,R*0.6,0,Math.PI*2);ctx.strokeStyle='rgba(0,90,200,0.22)';ctx.lineWidth=1.5;ctx.stroke();
+    if(regime==='cold'){
+      const p=0.5+0.5*Math.sin(tick*0.02+i*1.2);
+      ctx.beginPath();ctx.arc(d.x,d.y,R*0.85,0,Math.PI*2);
+      ctx.strokeStyle=`rgba(120,170,255,${0.12+p*0.08})`;ctx.lineWidth=2;ctx.stroke();
+    }
+    ctx.font='10px IBM Plex Mono';ctx.fillStyle='rgba(0,190,255,0.45)';ctx.textAlign='center';
+    ctx.fillText(`Q${i+1}`,d.x,d.y+R+18);
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawField(alpha){
+  if(fieldT<0.01)return;
+  const dp=dotPos(),fA=alpha*fieldT;
+  for(let i=0;i<dp.length;i++){
+    const d=dp[i],gw=66,gh=48,gy=d.y-gh-30;
+    const fa=regime==='sweet'?fA:fA*(regime==='hot'?0.5+0.5*Math.sin(tick*0.25+i*3):0.35);
+    for(let ln=0;ln<5;ln++){
+      const lx=d.x-20+ln*10,prog=((tick*0.017+ln*0.19)%1.0);
+      const sy2=gy+gh+4,ey=d.y-10,cy2=sy2+(ey-sy2)*prog;
+      const fC=`rgba(255,165,0,${fa*(0.8-prog*0.4)})`;
+      ctx.strokeStyle=fC;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(lx,cy2-6);ctx.lineTo(lx,cy2+6);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(lx,cy2+6);ctx.lineTo(lx-3,cy2+1);ctx.lineTo(lx+3,cy2+1);
+      ctx.closePath();ctx.fillStyle=fC;ctx.fill();
+    }
+    const p=0.5+0.5*Math.sin(tick*0.1+i);
+    ctx.globalAlpha=fa;ctx.shadowBlur=16*fieldT;ctx.shadowColor='rgba(255,140,0,0.7)';
+    ctx.strokeStyle=`rgba(255,160,0,${0.4+p*0.35})`;ctx.lineWidth=2;
+    ctx.strokeRect(d.x-gw/2-1,gy-1,gw+2,gh+2);
+    ctx.shadowBlur=0;ctx.globalAlpha=1;
+  }
+}
+
+function drawTempOverlay(alpha){
+  if(alpha<0.01)return;
+  if(regime==='hot'){
+    const intensity=(tempMK-100)/100;
+    const shimA=alpha*intensity*0.12;if(shimA<0.01)return;
+    const rg=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.7);
+    rg.addColorStop(0,'transparent');rg.addColorStop(0.7,`rgba(255,50,0,${shimA})`);rg.addColorStop(1,`rgba(255,20,0,${shimA*1.4})`);
+    ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+    ctx.globalAlpha=alpha*intensity*0.08;
+    for(let i=0;i<30;i++){ctx.beginPath();ctx.arc(W*0.2+W*0.6*Math.random(),H*0.2+H*0.6*Math.random(),1+Math.random()*3,0,Math.PI*2);ctx.fillStyle='rgba(255,120,0,0.6)';ctx.fill();}
+    ctx.globalAlpha=1;
+  } else if(regime==='cold'){
+    const intensity=Math.max(0,(10-tempMK)/10);
+    const frostA=alpha*0.15*(1-intensity)+alpha*intensity*0.25;if(frostA<0.01)return;
+    const bg=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*0.7);
+    bg.addColorStop(0,'transparent');bg.addColorStop(0.6,`rgba(60,100,255,${frostA*0.4})`);bg.addColorStop(1,`rgba(80,130,255,${frostA})`);
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  }
+}
+
+function drawZoomTransition(){
+  if(zoomT<=0.05||zoomT>=0.95)return;
+  const cx=W/2,cy=H/2-15,lensR=zoomT*Math.max(W,H)*1.4;
+  const vg=ctx.createRadialGradient(cx,cy,lensR*0.5,cx,cy,lensR);
+  vg.addColorStop(0,'transparent');vg.addColorStop(1,'rgba(0,0,0,0.45)');
+  ctx.globalAlpha=Math.sin(zoomT*Math.PI)*0.7;ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=Math.sin(zoomT*Math.PI)*0.5;
+  ctx.strokeStyle='rgba(0,245,255,0.6)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(cx,cy,lensR*0.55,0,Math.PI*2);ctx.stroke();
+  ctx.globalAlpha=1;
+}
+
+// ═══════════════════════════════════════════════════
+// SCROLL LOGIC
+// ═══════════════════════════════════════════════════
+let scrollSection = 0;
+let inDemo = false;
+
+// Map scroll section index → simulation state
+function applyScrollSection(idx){
+  scrollSection = idx;
+  inDemo = (idx === 3);
+
+  // HUD visibility
+  const showHud = idx >= 1;
+  document.getElementById('hud-label').classList.toggle('show', showHud);
+  document.getElementById('hud-sub').classList.toggle('show', showHud);
+  document.getElementById('hud-zoom').classList.toggle('show', showHud);
+
+  // Demo controls visibility
+  document.getElementById('demo-nav').classList.toggle('show', inDemo);
+  document.getElementById('temp-panel').classList.toggle('show', inDemo);
+
+  if(idx === 0){
+    // Hero — chip view, no zoom
+    zoomTarget = 0;
+    if(fieldOn){ fieldOn=false; trapElectrons=[]; freeElectrons.forEach(e=>e.captured=false); }
+    document.getElementById('hud-label').textContent='SILICON CHIP';
+    document.getElementById('hud-sub').textContent='// macro view // 12mm × 12mm die';
+    document.getElementById('zoom-val').textContent='1×';
+  } else if(idx === 1){
+    // Chip section — chip in view, start to highlight
+    zoomTarget = 0;
+    document.getElementById('hud-label').textContent='SILICON CHIP';
+    document.getElementById('hud-sub').textContent='// macro view // 12mm × 12mm die';
+    document.getElementById('zoom-val').textContent='1×';
+  } else if(idx === 2){
+    // Quantum dots — zoom in, field off, spawn electrons
+    zoomTarget = 1;
+    document.getElementById('hud-label').textContent='QUANTUM DOTS';
+    document.getElementById('hud-sub').textContent='// confinement wells // 30nm diameter';
+    document.getElementById('zoom-val').textContent='10,000×';
+    if(fieldOn){ fieldOn=false; trapElectrons=[]; freeElectrons.forEach(e=>e.captured=false); }
+    if(freeElectrons.length===0) spawnFree(false,false);
+  } else if(idx === 3){
+    // Demo — hand off to goStage() / toggleField() controls
+    // Arrive at stage 2 with field off, so demo starts in a useful state
+    if(stage < 2){
+      goStage(2);
+    }
+    // keep whatever state user left
+  }
+}
+
+// Intersection observer per section
+const allSections = [
+  document.getElementById('s-hero'),
+  document.getElementById('s-chip'),
+  document.getElementById('s-dots'),
+  document.getElementById('demo-section'),
+];
+
+const secObs = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting && e.intersectionRatio >= 0.5){
+      const idx = parseInt(e.target.dataset.idx)||0;
+      applyScrollSection(idx);
+    }
+  });
+},{threshold:0.5});
+allSections.forEach(s=>secObs.observe(s));
+
+// Text panel fade-in
+const panelObs = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    e.target.classList.toggle('visible', e.isIntersecting);
+  });
+},{threshold:0.3});
+document.querySelectorAll('.text-panel').forEach(p=>panelObs.observe(p));
+
+// Scroll progress bar
+window.addEventListener('scroll',()=>{
+  const sy=window.scrollY, max=document.body.scrollHeight-window.innerHeight;
+  document.getElementById('scroll-progress').style.width=(sy/max*100)+'%';
+},{passive:true});
+
+// ═══════════════════════════════════════════════════
+// MAIN LOOP
+// ═══════════════════════════════════════════════════
+spawnFree(false,false);
+updateTempUI();
+applyScrollSection(0);
+
+function animate(){
+  requestAnimationFrame(animate);
+  tick++;
+  zoomT+=(zoomTarget-zoomT)*0.04;
+  if(Math.abs(zoomTarget-zoomT)<0.0005) zoomT=zoomTarget;
+  if(fieldOn) fieldT=Math.min(1,fieldT+0.025);
+  else fieldT=Math.max(0,fieldT-0.03);
+
+  // Hot escape cycle
+  if(regime==='hot'&&fieldOn&&trapElectrons.length>0){
+    hotEscapeTimer++;
+    if(hotEscapeTimer>90+Math.floor(Math.random()*60)){
+      hotEscapeTimer=0;
+      trapElectrons=[];freeElectrons.forEach(e=>e.captured=false);
+      setTimeout(()=>{if(fieldOn&&regime==='hot')captureHot();},300);
+    }
+  }
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#060606';ctx.fillRect(0,0,W,H);
+
+  const chipA = Math.max(0,1-zoomT*2.2);
+  const deepA = Math.max(0,zoomT*2.2-1);
+
+  if(chipA>0.01) drawChip(chipA);
+  if(deepA>0.01){
+    drawSubstrate(deepA);
+    drawTempOverlay(deepA);
+    drawGates(deepA);
+    drawDots(deepA);
+    drawField(deepA);
+    const showElectrons = (scrollSection>=2) || (inDemo && stage>=2);
+    if(showElectrons){
+      for(const fe of freeElectrons){ if(!fe.captured){fe.update();fe.draw(deepA);} }
+    }
+    for(const te of trapElectrons){te.update();te.draw(deepA);}
+  }
+  drawZoomTransition();
+}
+animate();
+</script>
+</body>
+</html>

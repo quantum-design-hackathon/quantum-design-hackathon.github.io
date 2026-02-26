@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum Dot Corral — You Are The Controller</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=DM+Mono:wght@300;400;500&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#000;color:#8ab4e8;font-family:'DM Mono',monospace;overflow:hidden;height:100vh;width:100vw;cursor:none;user-select:none}
+  canvas{display:block;position:fixed;top:0;left:0;z-index:1}
+
+  .hud-corner{position:fixed;padding:24px 30px;z-index:10;pointer-events:none}
+  .hud-tl{top:0;left:0}
+  .hud-tr{top:0;right:0;text-align:right}
+  .hud-bl{bottom:0;left:0}
+  .hud-br{bottom:0;right:0;text-align:right}
+  .hud-micro{font-family:'DM Mono',monospace;font-weight:300;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(130,180,240,0.3);margin-bottom:3px}
+  .hud-big{font-family:'Instrument Serif',serif;font-weight:400;font-size:36px;color:rgba(180,215,255,0.85);line-height:1}
+  .hud-med{font-family:'DM Mono',monospace;font-weight:300;font-size:10px;color:rgba(140,190,255,0.4);letter-spacing:1px;line-height:2}
+
+  #centerTimer{
+    position:fixed;top:60px;left:50%;transform:translateX(-50%);
+    text-align:center;z-index:10;pointer-events:none;
+  }
+  #centerTimer #timerN{
+    font-family:'Instrument Serif',serif;font-weight:400;font-size:64px;
+    color:rgba(190,225,255,0.85);line-height:1;
+    text-shadow:0 0 40px rgba(100,180,255,0.15),0 0 80px rgba(100,180,255,0.05);
+    letter-spacing:4px;
+  }
+
+  #centerTitle{position:fixed;top:22px;left:50%;transform:translateX(-50%);text-align:center;z-index:10;pointer-events:none}
+  #centerTitle h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:13px;letter-spacing:8px;text-transform:uppercase;color:rgba(160,200,255,0.18)}
+  #centerTitle p{font-family:'DM Mono',monospace;font-weight:300;font-size:7px;letter-spacing:2px;color:rgba(120,170,240,0.1);margin-top:2px}
+
+  /* Gate status pills */
+  #gatePills{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:20px;z-index:10;pointer-events:none}
+  .gate-pill{
+    font-family:'DM Mono',monospace;font-weight:400;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;
+    padding:7px 20px;border-radius:30px;transition:all 0.4s cubic-bezier(0.2,0.8,0.2,1);
+    min-width:140px;text-align:center;
+  }
+  .gate-pill.repel{color:rgba(255,120,160,0.7);border:1px solid rgba(255,100,140,0.2);background:rgba(255,60,100,0.04);box-shadow:0 0 20px rgba(255,60,100,0.06)}
+  .gate-pill.attract{color:rgba(100,220,255,0.7);border:1px solid rgba(80,200,255,0.2);background:rgba(60,180,255,0.04);box-shadow:0 0 20px rgba(60,180,255,0.06)}
+  .gate-pill.off{color:rgba(120,150,180,0.25);border:1px solid rgba(120,150,180,0.08);background:transparent}
+
+  /* Coherence */
+  #cohWrap{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:10;pointer-events:none;text-align:center}
+  #cohWrap .hud-micro{margin-bottom:6px}
+  #cBar{width:200px;height:1px;background:rgba(120,180,255,0.08);border-radius:1px;margin:0 auto}
+  #cFill{height:100%;width:100%;background:linear-gradient(90deg,rgba(80,180,255,0.7),rgba(200,100,255,0.7));border-radius:1px;transition:width 0.4s;box-shadow:0 0 10px rgba(120,180,255,0.25)}
+
+  /* Webcam */
+  #camBox{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);width:180px;height:135px;border:1px solid rgba(120,180,255,0.08);border-radius:8px;overflow:hidden;z-index:10;opacity:0;pointer-events:none;transition:opacity 0.6s}
+  #camBox.show{opacity:0.45}
+  #camBox video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+
+  /* Info panel — what movements mean */
+  #infoPanel{
+    position:fixed;top:50%;right:28px;transform:translateY(-50%);z-index:10;pointer-events:none;
+    max-width:210px;opacity:0;transition:opacity 0.8s;
+    background:rgba(0,4,12,0.6);border:1px solid rgba(100,160,240,0.06);
+    border-radius:12px;padding:20px 18px;backdrop-filter:blur(8px);
+  }
+  #infoPanel.show{opacity:1}
+  .info-block{margin-bottom:16px}
+  .info-block .info-title{
+    font-family:'DM Mono',monospace;font-weight:500;font-size:9px;
+    letter-spacing:2px;text-transform:uppercase;color:rgba(190,225,255,0.75);margin-bottom:5px;
+  }
+  .info-block .info-desc{
+    font-family:'DM Mono',monospace;font-weight:300;font-size:8px;
+    color:rgba(160,200,240,0.5);letter-spacing:0.8px;line-height:2;
+  }
+
+  /* Overlays */
+  .ov{position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;transition:opacity 1s cubic-bezier(0.2,0.8,0.2,1)}
+  .ov.gone{opacity:0;pointer-events:none}
+  #startOv{background:radial-gradient(ellipse at 50% 40%,rgba(8,20,50,0.97),rgba(0,0,0,0.99))}
+  #startOv h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:42px;letter-spacing:6px;color:rgba(170,210,255,0.9);margin-bottom:4px}
+  #startOv .tag{font-family:'DM Mono',monospace;font-weight:300;font-size:10px;color:rgba(120,170,240,0.3);letter-spacing:3px;margin-bottom:50px}
+  .obtn{margin:5px;padding:14px 38px;font-family:'DM Mono',monospace;font-weight:400;font-size:10px;letter-spacing:3px;text-transform:uppercase;background:transparent;border:1px solid rgba(120,180,255,0.2);color:rgba(180,220,255,0.6);border-radius:30px;cursor:pointer;transition:all 0.4s}
+  .obtn:hover{border-color:rgba(100,200,255,0.5);color:rgba(230,245,255,0.9);box-shadow:0 0 30px rgba(80,180,255,0.12)}
+  .obtn.pri{border-color:rgba(100,200,255,0.35);color:rgba(200,230,255,0.8)}
+  .orow{display:flex;gap:10px}
+  .onote{font-family:'DM Mono',monospace;font-weight:300;font-size:8px;color:rgba(120,170,240,0.18);letter-spacing:1.5px;margin-top:36px;max-width:480px;text-align:center;line-height:2}
+  .onote em{color:rgba(140,190,255,0.3);font-style:normal}
+  #winOv{background:radial-gradient(ellipse at 50% 40%,rgba(10,30,60,0.85),rgba(0,0,0,0.97));opacity:0;pointer-events:none}
+  #winOv.show{opacity:1;pointer-events:auto}
+  #winOv h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:36px;letter-spacing:8px;color:rgba(160,220,255,0.9);margin-bottom:10px}
+  #winOv p{font-family:'DM Mono',monospace;font-weight:300;font-size:11px;color:rgba(120,180,255,0.45);letter-spacing:2px}
+</style>
+</head>
+<body>
+
+<div class="ov" id="startOv">
+  <h1>Quantum Corral</h1>
+  <div class="tag">you are the controller · two gates · one chip</div>
+  <div class="orow">
+    <button class="obtn pri" onclick="window.go('hand')">Hand Tracking</button>
+    <button class="obtn" onclick="window.go('mouse')">Mouse Fallback</button>
+  </div>
+  <div class="onote">
+    each hand is a gate electrode on a silicon chip<br>
+    <em>open hand repels electrons · pinch attracts them</em><br>
+    corral 9 electrons into 3 triple quantum dots before coherence decays<br>
+    <em>you are doing what conductor quantum's coda automates with AI</em>
+  </div>
+</div>
+
+<div class="ov" id="winOv">
+  <h1>Qubits Initialized</h1>
+  <p id="winStats"></p>
+  <button class="obtn" style="margin-top:28px" onclick="window.restart()">Load Again</button>
+</div>
+
+<div class="hud-corner hud-tl">
+  <div class="hud-micro">electrons loaded</div>
+  <div class="hud-big" id="capN">0<span style="font-size:18px;opacity:0.4"> / 9</span></div>
+</div>
+<div id="centerTimer">
+  <div class="hud-micro" style="margin-bottom:6px">decoherence clock</div>
+  <div id="timerN">0.0</div>
+</div>
+<div id="centerTitle"><h1>Quantum Dot Corral</h1><p>silicon spin qubits · exchange-only gates</p></div>
+
+<div id="cohWrap">
+  <div class="hud-micro">system coherence</div>
+  <div id="cBar"><div id="cFill"></div></div>
+</div>
+
+<div id="gatePills">
+  <div class="gate-pill off" id="gateL">left gate · off</div>
+  <div class="gate-pill off" id="gateR">right gate · off</div>
+</div>
+
+<div id="infoPanel">
+  <div class="info-block">
+    <div class="info-title">open hand → repel</div>
+    <div class="info-desc">negative voltage bias<br>depletes the region<br>pushes electrons away</div>
+  </div>
+  <div class="info-block">
+    <div class="info-title">pinch → attract</div>
+    <div class="info-desc">positive voltage bias<br>accumulates charge<br>pulls electrons toward you</div>
+  </div>
+  <div class="info-block">
+    <div class="info-title">two hands → two gates</div>
+    <div class="info-desc">real chips use many electrodes<br>each hand controls one gate<br>coordinate to load the middle dot</div>
+  </div>
+  <div class="info-block">
+    <div class="info-title">speed matters</div>
+    <div class="info-desc">electrons decohere over time<br>too slow and you lose them<br>too fast and they scatter</div>
+  </div>
+  <div class="info-block">
+    <div class="info-title">the middle dot is hardest</div>
+    <div class="info-desc">repulsion from both neighbors<br>requires precise two-gate coordination<br>this is why quantum computing is hard</div>
+  </div>
+  <div class="info-block">
+    <div class="info-title">you are coda</div>
+    <div class="info-desc">conductor quantum built AI<br>to automate what you're doing<br>by hand right now</div>
+  </div>
+</div>
+
+<div class="hud-corner hud-br">
+  <div class="hud-micro">mouse fallback</div>
+  <div class="hud-med" style="opacity:0.5">
+    left click → left gate<br>
+    right click → right gate<br>
+    space → toggle polarity<br>
+    scroll → force strength<br>
+    r → reset
+  </div>
+</div>
+
+<div id="camBox"><video id="camVid" autoplay playsinline></video></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const PI=Math.PI, TAU=PI*2;
+
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const CFG={
+  coulK:900, handK:1500, wellPullK:850,
+  wellCapR:2.2, wellSnapR:0.52, soft:0.9,
+  damp:0.9, maxF:160, maxV:9.5, dt:0.016,
+  decoR:0.002, wellSp:2.8, grpSp:5.8,
+  scatter:14, trailLen:70, ghostInt:4, ghostLife:55,
+};
+
+// ═══════════════════════════════════════════════════════
+// TWO-GATE STATE
+// ═══════════════════════════════════════════════════════
+const gates = [
+  { pos: new THREE.Vector3(-5,0,5), active:false, pol:-1, str:1.0, label:'L', pinching:false },
+  { pos: new THREE.Vector3(5,0,5),  active:false, pol:-1, str:1.0, label:'R', pinching:false },
+];
+const ST={
+  on:false, mode:'mouse', t:0, cap:0, coh:1, win:false, frame:0,
+  mouseGate:0, // 0=left click->gate0, 1=right click->gate1
+  mousePol:-1,
+  mouseStr:1.0,
+};
+
+// ═══════════════════════════════════════════════════════
+// SCENE
+// ═══════════════════════════════════════════════════════
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,0.1,500);
+camera.position.set(0,28,20);
+camera.lookAt(0,0,0);
+
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setClearColor(0x000000);
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.6;
+renderer.outputEncoding=THREE.sRGBEncoding;
+document.body.prepend(renderer.domElement);
+
+// Bloom compositing
+const baseRT=new THREE.WebGLRenderTarget(innerWidth,innerHeight,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat});
+const bloomRT=new THREE.WebGLRenderTarget(innerWidth,innerHeight,{minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,format:THREE.RGBAFormat});
+const compQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.ShaderMaterial({
+  uniforms:{tBase:{value:null},tBloom:{value:bloomRT.texture},bloomStr:{value:0.55}},
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.0);}`,
+  fragmentShader:`uniform sampler2D tBase;uniform sampler2D tBloom;uniform float bloomStr;varying vec2 vUv;void main(){gl_FragColor=texture2D(tBase,vUv)+texture2D(tBloom,vUv)*bloomStr;}`,
+  depthTest:false,depthWrite:false,
+}));
+const compScene=new THREE.Scene();
+const compCam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+compScene.add(compQuad);
+
+// ═══════════════════════════════════════════════════════
+// LIGHTING
+// ═══════════════════════════════════════════════════════
+scene.add(new THREE.AmbientLight(0x0a1530,0.8));
+const kL=new THREE.DirectionalLight(0x3366aa,0.5);kL.position.set(10,25,10);scene.add(kL);
+const rL=new THREE.DirectionalLight(0x2244aa,0.3);rL.position.set(-10,15,-10);scene.add(rL);
+scene.fog=new THREE.FogExp2(0x000308,0.012);
+
+// ═══════════════════════════════════════════════════════
+// ENVIRONMENT
+// ═══════════════════════════════════════════════════════
+// Dust
+const dustN=2000,dustGeo=new THREE.BufferGeometry();
+const dP=new Float32Array(dustN*3),dA=new Float32Array(dustN);
+for(let i=0;i<dustN;i++){dP[i*3]=(Math.random()-0.5)*80;dP[i*3+1]=Math.random()*30-2;dP[i*3+2]=(Math.random()-0.5)*80;dA[i]=Math.random();}
+dustGeo.setAttribute('position',new THREE.BufferAttribute(dP,3));
+dustGeo.setAttribute('alpha',new THREE.BufferAttribute(dA,1));
+const dustMat=new THREE.ShaderMaterial({
+  uniforms:{time:{value:0},color:{value:new THREE.Color(0x4477cc)}},
+  vertexShader:`attribute float alpha;varying float vAlpha;uniform float time;void main(){vAlpha=alpha;vec3 p=position;p.y+=sin(time*0.3+position.x*0.1)*0.5;p.x+=sin(time*0.2+position.z*0.05)*0.3;gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);gl_PointSize=max(1.0,2.5*(1.0-length(p)/60.0));}`,
+  fragmentShader:`uniform vec3 color;varying float vAlpha;void main(){float d=length(gl_PointCoord-0.5)*2.0;float a=smoothstep(1.0,0.0,d)*vAlpha*0.15;gl_FragColor=vec4(color,a);}`,
+  transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+});
+scene.add(new THREE.Points(dustGeo,dustMat));
+
+// Ground
+const groundMesh=new THREE.Mesh(new THREE.PlaneGeometry(80,80),new THREE.MeshStandardMaterial({color:0x030610,roughness:0.7,metalness:0.5}));
+groundMesh.rotation.x=-PI/2;groundMesh.position.y=-1;scene.add(groundMesh);
+const gH=new THREE.GridHelper(60,40,0x081830,0x081830);gH.position.y=-0.98;gH.material.opacity=0.15;gH.material.transparent=true;scene.add(gH);
+
+// ═══════════════════════════════════════════════════════
+// SHADERS
+// ═══════════════════════════════════════════════════════
+const frV=`varying vec3 vN;varying vec3 vV;void main(){vN=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.0);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`;
+const frF=`uniform vec3 gCol;uniform float gInt;uniform float time;uniform float coh;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.0-max(dot(vN,vV),0.0),2.5);float p=0.85+0.15*sin(time*3.0);float a=f*gInt*p*coh;gl_FragColor=vec4(gCol*(1.0+f*0.5),a*0.7);}`;
+const wellF=`uniform vec3 color;uniform float time;uniform float occ;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.0-max(dot(vN,vV),0.0),2.0);float sw=sin(time*2.0+vN.y*6.0)*0.5+0.5;float a=f*0.4+sw*0.1+occ*0.3;gl_FragColor=vec4(color*(1.0+occ*0.8),a*0.6);}`;
+
+// ═══════════════════════════════════════════════════════
+// WELLS
+// ═══════════════════════════════════════════════════════
+const wells=[];
+function mkWells(){
+  for(let g=-1;g<=1;g++)for(let d=-1;d<=1;d++){
+    const pos=new THREE.Vector3(g*CFG.grpSp+d*CFG.wellSp,0,0);
+    const grp=new THREE.Group();grp.position.copy(pos);
+    const cMat=new THREE.ShaderMaterial({uniforms:{color:{value:new THREE.Color(0x1a4080)},time:{value:0},occ:{value:0}},vertexShader:frV,fragmentShader:wellF,transparent:true,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
+    const cup=new THREE.Mesh(new THREE.CylinderGeometry(0.15,CFG.wellSp*0.35,1.2,6,1,true),cMat);cup.position.y=-0.6;grp.add(cup);
+    const tMat=new THREE.MeshBasicMaterial({color:0x2266bb,transparent:true,opacity:0.08,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});
+    const tor=new THREE.Mesh(new THREE.TorusGeometry(CFG.wellSp*0.35,0.05,8,24),tMat);tor.rotation.x=PI/2;tor.position.y=-0.05;grp.add(tor);
+    const lt=new THREE.PointLight(0x2255aa,0.4,5);lt.position.y=-0.5;grp.add(lt);
+    const sN=30,sG=new THREE.BufferGeometry(),sP=new Float32Array(sN*3);
+    for(let s=0;s<sN;s++){const a=(s/sN)*TAU;sP[s*3]=Math.cos(a)*0.3;sP[s*3+1]=-0.5+Math.random()*0.3;sP[s*3+2]=Math.sin(a)*0.3;}
+    sG.setAttribute('position',new THREE.BufferAttribute(sP,3));
+    const sw=new THREE.Points(sG,new THREE.PointsMaterial({color:0x3388dd,size:0.06,transparent:true,opacity:0.3,blending:THREE.AdditiveBlending,depthWrite:false}));
+    grp.add(sw);scene.add(grp);
+    wells.push({position:pos.clone(),occupied:false,eIdx:-1,grp,cup,tor,lt,sw,cMat,tMat});
+  }
+  for(let g=0;g<3;g++)for(let d=0;d<2;d++){
+    const a=wells[g*3+d].position,b=wells[g*3+d+1].position;
+    const cv=new THREE.CatmullRomCurve3([new THREE.Vector3(a.x,-0.1,a.z),new THREE.Vector3((a.x+b.x)/2,0.15,0),new THREE.Vector3(b.x,-0.1,b.z)]);
+    scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(cv.getPoints(20)),new THREE.LineBasicMaterial({color:0x1a4488,transparent:true,opacity:0.12,blending:THREE.AdditiveBlending})));
+  }
+}
+mkWells();
+
+// ═══════════════════════════════════════════════════════
+// ELECTRONS
+// ═══════════════════════════════════════════════════════
+const electrons=[],eMeshes=[],trailSys=[];
+const ghosts=[];
+
+function mkAtom(idx){
+  const grp=new THREE.Group();
+  const corM=new THREE.MeshStandardMaterial({color:0xff4466,emissive:0xff2244,emissiveIntensity:2.0,roughness:0.1,metalness:0.9});
+  const core=new THREE.Mesh(new THREE.IcosahedronGeometry(0.18,2),corM);grp.add(core);
+  const iM=new THREE.ShaderMaterial({uniforms:{gCol:{value:new THREE.Color(0xff3366)},gInt:{value:1.5},time:{value:0},coh:{value:1}},vertexShader:frV,fragmentShader:frF,transparent:true,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
+  const iS=new THREE.Mesh(new THREE.IcosahedronGeometry(0.35,2),iM);grp.add(iS);
+  const oM=new THREE.ShaderMaterial({uniforms:{gCol:{value:new THREE.Color(0xff6688)},gInt:{value:0.8},time:{value:0},coh:{value:1}},vertexShader:frV,fragmentShader:frF,transparent:true,side:THREE.FrontSide,depthWrite:false,blending:THREE.AdditiveBlending});
+  const oS=new THREE.Mesh(new THREE.IcosahedronGeometry(0.55,1),oM);grp.add(oS);
+  const wM=new THREE.MeshBasicMaterial({color:0xff4488,wireframe:true,transparent:true,opacity:0.15,blending:THREE.AdditiveBlending});
+  const wr=new THREE.Mesh(new THREE.OctahedronGeometry(0.45,0),wM);grp.add(wr);
+  const lt=new THREE.PointLight(0xff3366,1.2,6);grp.add(lt);
+
+  const ang=(idx/9)*TAU+(Math.random()-0.5)*0.4;
+  const rad=CFG.scatter*(0.4+Math.random()*0.6);
+  const px=Math.cos(ang)*rad,pz=Math.sin(ang)*rad*0.5;
+  grp.position.set(px,0.4,pz);scene.add(grp);
+
+  // Trail
+  const tN=CFG.trailLen,tG=new THREE.BufferGeometry();
+  const tP=new Float32Array(tN*3),tA=new Float32Array(tN),tSz=new Float32Array(tN);
+  for(let t=0;t<tN;t++){tP[t*3]=px;tP[t*3+1]=0.4;tP[t*3+2]=pz;tA[t]=1-t/tN;tSz[t]=3*(1-t/tN);}
+  tG.setAttribute('position',new THREE.BufferAttribute(tP,3));
+  tG.setAttribute('alpha',new THREE.BufferAttribute(tA,1));
+  tG.setAttribute('size',new THREE.BufferAttribute(tSz,1));
+  const trM=new THREE.ShaderMaterial({
+    uniforms:{color:{value:new THREE.Color(0xff2255)},coh:{value:1}},
+    vertexShader:`attribute float alpha;attribute float size;varying float vA;void main(){vA=alpha;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);gl_PointSize=size*(300.0/length(gl_Position.xyz));}`,
+    fragmentShader:`uniform vec3 color;uniform float coh;varying float vA;void main(){float d=length(gl_PointCoord-0.5)*2.0;float a=smoothstep(1.0,0.0,d)*vA*0.25*coh;gl_FragColor=vec4(color,a);}`,
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  });
+  const trail=new THREE.Points(tG,trM);scene.add(trail);
+  trailSys.push({geo:tG,pos:tP,mat:trM,n:tN});
+  eMeshes.push({grp,core,iS,oS,wr,lt,corM,iM,oM,wM});
+  return{pos:new THREE.Vector3(px,0,pz),vel:new THREE.Vector3((Math.random()-0.5)*1.5,0,(Math.random()-0.5)*1.5),captured:false,wIdx:-1,coh:1,dead:false};
+}
+for(let i=0;i<9;i++)electrons.push(mkAtom(i));
+
+function spawnGhost(p,c){
+  const m=new THREE.MeshBasicMaterial({color:c||0xff3366,transparent:true,opacity:0.1,blending:THREE.AdditiveBlending,depthWrite:false});
+  const mesh=new THREE.Mesh(new THREE.IcosahedronGeometry(0.25,1),m);
+  mesh.position.copy(p);mesh.position.y=0.4;scene.add(mesh);
+  ghosts.push({mesh,life:CFG.ghostLife,mx:CFG.ghostLife});
+}
+function updGhosts(){
+  for(let i=ghosts.length-1;i>=0;i--){
+    const g=ghosts[i];g.life--;const t=g.life/g.mx;
+    g.mesh.material.opacity=0.08*t;g.mesh.scale.setScalar(1+(1-t)*0.6);
+    if(g.life<=0){scene.remove(g.mesh);g.mesh.geometry.dispose();g.mesh.material.dispose();ghosts.splice(i,1);}
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// HAND VISUALIZERS (one per gate)
+// ═══════════════════════════════════════════════════════
+const gateVis=gates.map((gate,gi)=>{
+  const grp=new THREE.Group();
+  const hM=new THREE.ShaderMaterial({uniforms:{gCol:{value:new THREE.Color(0x44aaff)},gInt:{value:1.2},time:{value:0},coh:{value:1}},vertexShader:frV,fragmentShader:frF,transparent:true,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending});
+  const orb=new THREE.Mesh(new THREE.SphereGeometry(0.4,24,24),hM);grp.add(orb);
+  const rings=[];
+  for(let i=0;i<3;i++){
+    const rM=new THREE.MeshBasicMaterial({color:0x44aaff,transparent:true,opacity:0.04,side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false});
+    const ring=new THREE.Mesh(new THREE.RingGeometry(1.2+i*0.7,1.35+i*0.7,48),rM);ring.rotation.x=-PI/2;grp.add(ring);
+    rings.push({mesh:ring,mat:rM,base:1.2+i*0.7});
+  }
+  const hL=new THREE.PointLight(0x44aaff,1.2,12);hL.position.y=0.5;grp.add(hL);
+
+  // Field particles
+  const fpN=150,fpG=new THREE.BufferGeometry();
+  const fpP=new Float32Array(fpN*3),fpA=new Float32Array(fpN);
+  for(let i=0;i<fpN;i++){const a=Math.random()*TAU,r=0.5+Math.random()*3;fpP[i*3]=Math.cos(a)*r;fpP[i*3+1]=(Math.random()-0.5)*0.4;fpP[i*3+2]=Math.sin(a)*r;fpA[i]=Math.random();}
+  fpG.setAttribute('position',new THREE.BufferAttribute(fpP,3));
+  fpG.setAttribute('alpha',new THREE.BufferAttribute(fpA,1));
+  const fpM=new THREE.ShaderMaterial({
+    uniforms:{color:{value:new THREE.Color(0x44aaff)},pol:{value:-1}},
+    vertexShader:`attribute float alpha;varying float vA;void main(){vA=alpha;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);gl_PointSize=max(1.0,2.5*alpha);}`,
+    fragmentShader:`uniform vec3 color;uniform float pol;varying float vA;void main(){float d=length(gl_PointCoord-0.5)*2.0;float a=smoothstep(1.0,0.0,d)*vA*0.3;vec3 c=pol>0.0?vec3(0.3,0.8,1.0):vec3(1.0,0.3,0.5);gl_FragColor=vec4(c,a);}`,
+    transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+  });
+  const fp=new THREE.Points(fpG,fpM);grp.add(fp);
+  grp.visible=false;
+  scene.add(grp);
+  return{grp,orb,hM,rings,hL,fpG,fpP,fpA,fpM,fpN};
+});
+
+// ═══════════════════════════════════════════════════════
+// AUDIO — gamma drone + solfège scale + proximity
+// ═══════════════════════════════════════════════════════
+let actx,mG,eOsc=[];
+
+// Gamma drone nodes (per gate)
+let gateDrones = [null, null];
+// Sustained solfège notes currently ringing
+let sustainedNotes = [];
+
+function initAudio(){
+  actx=new(window.AudioContext||window.webkitAudioContext)();
+  mG=actx.createGain();mG.gain.value=0.08;mG.connect(actx.destination);
+
+  // Per-electron ambient oscillators (subtle hum)
+  for(let i=0;i<9;i++){
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type='sine';o.frequency.value=180+i*30;g.gain.value=0;
+    o.connect(g);g.connect(mG);o.start();
+    eOsc.push({o,g});
+  }
+
+  // Gate drones — low gamma vibration per gate
+  // Each gate gets a layered drone: fundamental + sub-harmonic + noise-filtered
+  for(let gi=0;gi<2;gi++){
+    // Fundamental — low sawtooth for grit
+    const droneOsc=actx.createOscillator();
+    droneOsc.type='sawtooth';
+    droneOsc.frequency.value=gi===0?55:58; // slight detune between gates
+
+    // Sub-harmonic
+    const subOsc=actx.createOscillator();
+    subOsc.type='sine';
+    subOsc.frequency.value=gi===0?27.5:29;
+
+    // LFO for vibration/tremolo feel
+    const lfo=actx.createOscillator();
+    lfo.type='sine';
+    lfo.frequency.value=gi===0?6:7; // gamma range ~6-7 Hz
+    const lfoGain=actx.createGain();
+    lfoGain.gain.value=0.3;
+    lfo.connect(lfoGain);
+
+    // Drone gain (master for this gate)
+    const droneGain=actx.createGain();
+    droneGain.gain.value=0;
+
+    // Sub gain
+    const subGain=actx.createGain();
+    subGain.gain.value=0;
+
+    // Bandpass filter for texture
+    const filter=actx.createBiquadFilter();
+    filter.type='bandpass';
+    filter.frequency.value=gi===0?110:116;
+    filter.Q.value=8;
+
+    // LFO modulates drone gain for vibration effect
+    lfoGain.connect(droneGain.gain);
+
+    // Routing
+    droneOsc.connect(filter);
+    filter.connect(droneGain);
+    subOsc.connect(subGain);
+    droneGain.connect(mG);
+    subGain.connect(mG);
+
+    droneOsc.start();subOsc.start();lfo.start();
+
+    gateDrones[gi]={
+      droneOsc, subOsc, lfo, lfoGain, droneGain, subGain, filter,
+      targetVol:0, currentVol:0,
+    };
+  }
+}
+
+// Solfège scale: Do Re Mi Fa Sol La Ti Do Re (C major, two octaves for 9 notes)
+const SOLFEGE=[
+  261.63, // Do  (C4)
+  293.66, // Re  (D4)
+  329.63, // Mi  (E4)
+  349.23, // Fa  (F4)
+  392.00, // Sol (G4)
+  440.00, // La  (A4)
+  493.88, // Ti  (B4)
+  523.25, // Do  (C5)
+  587.33, // Re  (D5)
+];
+
+function chime(idx){
+  if(!actx)return;
+  const baseFreq=SOLFEGE[idx%9];
+  const now=actx.currentTime;
+
+  // Main note — triangle for warmth, long sustain (3.5s)
+  const o1=actx.createOscillator(),g1=actx.createGain();
+  o1.type='triangle';o1.frequency.value=baseFreq;
+  g1.gain.setValueAtTime(0.18,now);
+  g1.gain.linearRampToValueAtTime(0.14,now+0.3); // slight attack shape
+  g1.gain.exponentialRampToValueAtTime(0.04,now+2.5);
+  g1.gain.exponentialRampToValueAtTime(0.001,now+4.5);
+  o1.connect(g1);g1.connect(mG);o1.start(now);o1.stop(now+4.5);
+
+  // Octave harmonic — sine, softer, slightly delayed
+  const o2=actx.createOscillator(),g2=actx.createGain();
+  o2.type='sine';o2.frequency.value=baseFreq*2;
+  g2.gain.setValueAtTime(0,now);
+  g2.gain.linearRampToValueAtTime(0.06,now+0.15);
+  g2.gain.exponentialRampToValueAtTime(0.001,now+3.5);
+  o2.connect(g2);g2.connect(mG);o2.start(now+0.05);o2.stop(now+3.5);
+
+  // Fifth harmonic — adds richness
+  const o3=actx.createOscillator(),g3=actx.createGain();
+  o3.type='sine';o3.frequency.value=baseFreq*1.5;
+  g3.gain.setValueAtTime(0,now);
+  g3.gain.linearRampToValueAtTime(0.035,now+0.2);
+  g3.gain.exponentialRampToValueAtTime(0.001,now+3);
+  o3.connect(g3);g3.connect(mG);o3.start(now+0.1);o3.stop(now+3);
+
+  // If we have previous sustained notes, create harmonic blend
+  // by letting them ring together — this is the "DJ set" cumulative effect
+  sustainedNotes.push({freq:baseFreq, time:now});
+  // Clean old notes
+  sustainedNotes=sustainedNotes.filter(n=>now-n.time<4);
+
+  // If 3+ notes ringing, add a soft pad chord of all sustained
+  if(sustainedNotes.length>=3){
+    const padGain=actx.createGain();
+    padGain.gain.setValueAtTime(0.02,now);
+    padGain.gain.exponentialRampToValueAtTime(0.001,now+3);
+    padGain.connect(mG);
+    sustainedNotes.slice(-3).forEach(n=>{
+      const po=actx.createOscillator();
+      po.type='sine';po.frequency.value=n.freq*0.5; // sub-octave pad
+      po.connect(padGain);po.start(now);po.stop(now+3);
+    });
+  }
+}
+
+function winChord(){
+  if(!actx)return;
+  const now=actx.currentTime;
+  // Full solfège chord — all 9 notes as a shimmering wash
+  SOLFEGE.forEach((f,i)=>{
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.type='sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0,now+i*0.2);
+    g.gain.linearRampToValueAtTime(0.07,now+i*0.2+0.3);
+    g.gain.exponentialRampToValueAtTime(0.001,now+6);
+    o.connect(g);g.connect(mG);
+    o.start(now+i*0.2);o.stop(now+6);
+  });
+  // Sub bass resolution
+  const bo=actx.createOscillator(),bg=actx.createGain();
+  bo.type='sine';bo.frequency.value=130.81; // C3
+  bg.gain.setValueAtTime(0.1,now);
+  bg.gain.exponentialRampToValueAtTime(0.001,now+5);
+  bo.connect(bg);bg.connect(mG);bo.start(now);bo.stop(now+5);
+}
+
+function updAudio(){
+  if(!actx)return;
+
+  // Per-electron ambient hum (subtle)
+  electrons.forEach((e,i)=>{
+    const eo=eOsc[i];
+    if(e.captured||e.dead){eo.g.gain.value*=0.93;return;}
+    eo.o.frequency.value=160+i*25+e.vel.length()*15;
+    eo.g.gain.value=0.004*e.coh;
+  });
+
+  // Gate drone — proximity-reactive gamma vibration
+  gates.forEach((gate,gi)=>{
+    const drone=gateDrones[gi];
+    if(!drone)return;
+
+    if(!gate.active){
+      // Fade out drone when gate inactive
+      drone.targetVol=0;
+    } else {
+      // Find closest electron distance to this gate
+      let minDist=Infinity;
+      electrons.forEach(e=>{
+        if(e.captured||e.dead)return;
+        const dx=e.pos.x-gate.pos.x, dz=e.pos.z-gate.pos.z;
+        const dist=Math.sqrt(dx*dx+dz*dz);
+        if(dist<minDist)minDist=dist;
+      });
+
+      // Volume: louder when closer, max when touching
+      // Range: 0 at dist>12, max at dist<1
+      const proximity=Math.max(0, 1-minDist/12);
+      const proxCurve=proximity*proximity; // quadratic for more dramatic near-field
+
+      // Attract mode is louder (you're actively pulling)
+      const polBoost=gate.pol===1?1.5:0.7;
+
+      drone.targetVol=proxCurve*0.15*gate.str*polBoost;
+
+      // Pitch shifts up with proximity (tension)
+      const basePitch=gi===0?55:58;
+      drone.droneOsc.frequency.value=basePitch+proximity*30;
+      drone.subOsc.frequency.value=(basePitch/2)+proximity*15;
+      drone.filter.frequency.value=(basePitch*2)+proximity*200;
+
+      // LFO speed increases with proximity (faster vibration = more intensity)
+      drone.lfo.frequency.value=4+proximity*12; // 4Hz → 16Hz
+
+      // Filter Q opens up with proximity
+      drone.filter.Q.value=4+proximity*12;
+    }
+
+    // Smooth volume interpolation (avoid clicks)
+    drone.currentVol+=(drone.targetVol-drone.currentVol)*0.08;
+    drone.droneGain.gain.value=drone.currentVol;
+    drone.subGain.gain.value=drone.currentVol*0.6;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// INPUT — MOUSE (two-gate via left/right click)
+// ═══════════════════════════════════════════════════════
+const rc=new THREE.Raycaster(),mNDC=new THREE.Vector2(),gPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+
+function mouseToWorld(ev){
+  mNDC.x=(ev.clientX/innerWidth)*2-1;
+  mNDC.y=-(ev.clientY/innerHeight)*2+1;
+  rc.setFromCamera(mNDC,camera);
+  const hit=new THREE.Vector3();
+  rc.ray.intersectPlane(gPlane,hit);
+  return hit;
+}
+
+document.addEventListener('mousemove',ev=>{
+  if(ST.mode!=='mouse')return;
+  const hit=mouseToWorld(ev);
+  if(!hit)return;
+  // Both gates track mouse, but only active one matters
+  gates.forEach(g=>{g.pos.copy(hit);});
+});
+
+document.addEventListener('mousedown',ev=>{
+  if(ST.mode!=='mouse')return;
+  ev.preventDefault();
+  const gi=ev.button===2?1:0; // right click = gate 1
+  gates[gi].active=true;
+  gates[gi].pol=ST.mousePol;
+  gates[gi].str=ST.mouseStr;
+  updGateUI();
+});
+document.addEventListener('mouseup',ev=>{
+  if(ST.mode!=='mouse')return;
+  const gi=ev.button===2?1:0;
+  gates[gi].active=false;
+  updGateUI();
+});
+document.addEventListener('contextmenu',ev=>ev.preventDefault());
+
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();ST.mousePol*=-1;gates.forEach(g=>{if(g.active)g.pol=ST.mousePol;});updGateUI();}
+  if(e.code==='KeyR')doReset();
+});
+document.addEventListener('wheel',e=>{ST.mouseStr=Math.max(0.2,Math.min(3,ST.mouseStr+(e.deltaY>0?-0.12:0.12)));gates.forEach(g=>g.str=ST.mouseStr);});
+
+function updGateUI(){
+  gates.forEach((g,i)=>{
+    const el=document.getElementById(i===0?'gateL':'gateR');
+    const label=i===0?'left':'right';
+    if(!g.active){el.className='gate-pill off';el.textContent=`${label} gate · off`;}
+    else if(g.pol===1){el.className='gate-pill attract';el.textContent=`${label} gate · attract`;}
+    else{el.className='gate-pill repel';el.textContent=`${label} gate · repel`;}
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// MEDIAPIPE — TWO HANDS
+// ═══════════════════════════════════════════════════════
+function loadJS(s){return new Promise((r,j)=>{const el=document.createElement('script');el.src=s;el.onload=r;el.onerror=j;document.head.appendChild(el);})}
+
+async function initHands(){
+  try{
+    await loadJS('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+    await loadJS('https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js');
+    const vid=document.getElementById('camVid');
+    document.getElementById('camBox').classList.add('show');
+
+    const hands=new window.Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+    hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.65,minTrackingConfidence:0.5});
+
+    hands.onResults(r=>{
+      // Reset gates
+      gates[0].active=false;
+      gates[1].active=false;
+
+      if(r.multiHandLandmarks){
+        r.multiHandLandmarks.forEach((lm,hi)=>{
+          // Determine which hand (left/right) from handedness
+          const handedness = r.multiHandedness && r.multiHandedness[hi];
+          // MediaPipe mirror: "Right" label = user's right hand = screen left
+          let gi = 0; // default left gate
+          if(handedness && handedness.label === 'Left') gi = 1; // user's left hand in mirror = right gate
+          if(handedness && handedness.label === 'Right') gi = 0;
+
+          const tip=lm[8], th=lm[4];
+          gates[gi].pos.set(-(tip.x-0.5)*32, 0, (tip.y-0.5)*22);
+          gates[gi].active=true;
+
+          // Pinch = attract, open = repel
+          const pd=Math.sqrt((th.x-tip.x)**2+(th.y-tip.y)**2+(th.z-tip.z)**2);
+          gates[gi].pinching = pd < 0.055;
+          gates[gi].pol = gates[gi].pinching ? 1 : -1;
+
+          // Spread → strength
+          const mid=lm[12],ring=lm[16];
+          const spread=Math.sqrt((mid.x-ring.x)**2+(mid.y-ring.y)**2);
+          gates[gi].str=0.5+spread*8;
+        });
+      }
+      updGateUI();
+    });
+
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:320,height:240}});
+    vid.srcObject=stream;
+    const cam=new window.Camera(vid,{onFrame:async()=>{await hands.send({image:vid});},width:320,height:240});
+    cam.start();
+  }catch(err){
+    console.warn('Hand tracking unavailable:',err);
+    ST.mode='mouse';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PHYSICS
+// ═══════════════════════════════════════════════════════
+const _d=new THREE.Vector3();
+function softC(r,k){return k/(r*r+CFG.soft*CFG.soft);}
+function clV(v,m){const l=v.length();if(l>m)v.multiplyScalar(m/l);}
+
+function physics(){
+  electrons.forEach((e,i)=>{
+    if(e.captured||e.dead)return;
+    const F=new THREE.Vector3();
+
+    // e-e repulsion
+    electrons.forEach((e2,j)=>{
+      if(i===j||e2.captured||e2.dead)return;
+      _d.subVectors(e.pos,e2.pos);const r=_d.length();if(r<0.01)return;
+      _d.normalize();F.addScaledVector(_d,softC(r,CFG.coulK));
+    });
+
+    // TWO GATE FIELDS
+    gates.forEach(gate=>{
+      if(!gate.active)return;
+      _d.subVectors(e.pos,gate.pos);
+      const r=_d.length();if(r<0.1)return;
+      _d.normalize();
+      F.addScaledVector(_d,softC(r,CFG.handK*gate.str)*(-gate.pol));
+    });
+
+    // Well pull
+    wells.forEach((w,wi)=>{
+      if(w.occupied)return;
+      _d.subVectors(w.position,e.pos);const r=_d.length();
+      if(r<CFG.wellCapR){
+        _d.normalize();
+        F.addScaledVector(_d,CFG.wellPullK*Math.pow(1-r/CFG.wellCapR,1.5));
+        if(r<CFG.wellSnapR&&e.vel.length()<4)capture(i,wi);
+      }
+    });
+
+    // Walls
+    const B=28;
+    if(Math.abs(e.pos.x)>B)F.x-=Math.sign(e.pos.x)*80;
+    if(Math.abs(e.pos.z)>B)F.z-=Math.sign(e.pos.z)*80;
+
+    clV(F,CFG.maxF);
+    e.vel.addScaledVector(F,CFG.dt);
+    e.vel.multiplyScalar(CFG.damp);
+    clV(e.vel,CFG.maxV);
+    e.pos.addScaledVector(e.vel,CFG.dt);
+    e.pos.y=0;
+    e.coh-=CFG.decoR*CFG.dt;
+    if(e.coh<=0){e.coh=0;e.dead=true;}
+  });
+}
+
+function capture(eI,wI){
+  const e=electrons[eI],w=wells[wI];
+  if(e.captured||w.occupied)return;
+  e.captured=true;e.wIdx=wI;e.vel.set(0,0,0);e.pos.copy(w.position);
+  w.occupied=true;w.eIdx=eI;ST.cap++;
+  w.cMat.uniforms.occ.value=1;w.lt.intensity=1.5;w.lt.color.setHex(0x44aaff);
+  chime(ST.cap-1);
+  document.getElementById('capN').innerHTML=`${ST.cap}<span style="font-size:18px;opacity:0.4"> / 9</span>`;
+  if(ST.cap>=9)setTimeout(doWin,600);
+}
+
+// ═══════════════════════════════════════════════════════
+// VISUALS
+// ═══════════════════════════════════════════════════════
+const _bc=new THREE.Color(0x4488ff),_bcL=new THREE.Color(0x6699ff),_bcG=new THREE.Color(0x3377ee);
+
+function updVisuals(t){
+  dustMat.uniforms.time.value=t;
+
+  electrons.forEach((e,i)=>{
+    const m=eMeshes[i];
+    if(e.dead){m.corM.opacity=(m.corM.opacity||1)*0.96;m.corM.transparent=true;m.lt.intensity*=0.96;return;}
+    m.grp.position.set(e.pos.x,0.4,e.pos.z);
+    m.iM.uniforms.time.value=t;m.iM.uniforms.coh.value=e.coh;
+    m.oM.uniforms.time.value=t;m.oM.uniforms.coh.value=e.coh;
+
+    if(!e.captured){
+      const spd=e.vel.length();
+      m.core.rotation.y+=0.03+spd*0.08;
+      m.wr.rotation.y-=0.02+spd*0.04;
+      m.wr.rotation.x=Math.sin(t*1.5+i)*0.4;
+      m.iS.rotation.y+=0.01;m.oS.rotation.z+=0.008;
+      m.oS.scale.setScalar(1+spd*0.06);
+      m.lt.intensity=0.8+spd*0.3;
+      if(ST.frame%CFG.ghostInt===0&&spd>1.5)spawnGhost(m.grp.position,0xff3366);
+    }else{
+      m.grp.position.y=0.4+Math.sin(t*2.5+i*0.7)*0.1;
+      m.core.rotation.y+=0.008;m.wr.rotation.y+=0.005;
+      m.corM.emissive.lerp(_bc,0.03);m.corM.color.lerp(_bcL,0.03);
+      m.iM.uniforms.gCol.value.lerp(_bc,0.03);
+      m.oM.uniforms.gCol.value.lerp(_bcG,0.03);
+      m.wM.color.lerp(_bc,0.03);
+      m.lt.color.lerp(new THREE.Color(0x4488ff),0.03);
+    }
+
+    // Trail
+    const tr=trailSys[i];
+    for(let j=tr.n-1;j>0;j--){tr.pos[j*3]=tr.pos[(j-1)*3];tr.pos[j*3+1]=tr.pos[(j-1)*3+1];tr.pos[j*3+2]=tr.pos[(j-1)*3+2];}
+    tr.pos[0]=m.grp.position.x;tr.pos[1]=m.grp.position.y;tr.pos[2]=m.grp.position.z;
+    tr.geo.attributes.position.needsUpdate=true;
+    tr.mat.uniforms.coh.value=e.coh;
+    if(e.captured)tr.mat.uniforms.color.value.lerp(_bc,0.02);
+  });
+
+  updGhosts();
+
+  // Gate visualizers
+  gates.forEach((gate,gi)=>{
+    const v=gateVis[gi];
+    v.grp.visible=gate.active;
+    if(!gate.active)return;
+    v.grp.position.set(gate.pos.x,0.3,gate.pos.z);
+    v.hM.uniforms.time.value=t;
+
+    const hCol=gate.pol===1?0x44ccff:0xff4488;
+    v.hM.uniforms.gCol.value.setHex(hCol);
+    v.hL.color.setHex(hCol);
+    v.hL.intensity=1.5*gate.str;
+    v.fpM.uniforms.pol.value=gate.pol;
+
+    v.rings.forEach((fr,ri)=>{
+      const pulse=1+Math.sin(t*3-ri*0.8)*0.12;
+      const s=pulse*gate.str;
+      fr.mesh.scale.set(s,s,s);
+      fr.mat.opacity=0.04*gate.str/(ri+1);
+      fr.mat.color.setHex(hCol);
+      fr.mesh.rotation.z=t*0.3*(ri%2===0?1:-1);
+    });
+
+    // Animate field particles
+    const fp=v.fpP,fa=v.fpA;
+    for(let i=0;i<v.fpN;i++){
+      const r=Math.sqrt(fp[i*3]**2+fp[i*3+2]**2);
+      const a=Math.atan2(fp[i*3+2],fp[i*3]);
+      let nr=r+gate.pol*0.03*gate.str;
+      if(gate.pol<0&&nr>4)nr=0.3+Math.random()*0.5;
+      if(gate.pol>0&&nr<0.3)nr=3+Math.random();
+      if(nr<0.1)nr=0.1;
+      const na=a+0.02*(1/Math.max(r,0.5));
+      fp[i*3]=Math.cos(na)*nr;fp[i*3+2]=Math.sin(na)*nr;
+      fa[i]=gate.active?(1-r/5)*0.8:0.05;
+    }
+    v.fpG.attributes.position.needsUpdate=true;
+    v.fpG.attributes.alpha.needsUpdate=true;
+  });
+
+  // Wells
+  wells.forEach((w,i)=>{
+    w.cMat.uniforms.time.value=t;
+    w.sw.rotation.y=t*1.5+i*0.5;
+    if(!w.occupied){
+      const b=1+Math.sin(t*1.8+i*0.6)*0.04;
+      w.cup.scale.set(b,1,b);
+      w.tMat.opacity=0.06+Math.sin(t*1.2+i*0.4)*0.03;
+    }else{
+      w.tMat.opacity=0.15;w.tMat.color.setHex(0x44aaff);
+      w.sw.material.color.setHex(0x44aaff);w.sw.material.opacity=0.6;
+    }
+  });
+
+  const avg=electrons.reduce((s,e2)=>s+(e2.dead?0:e2.coh),0)/9;
+  ST.coh=avg;
+  document.getElementById('cFill').style.width=`${avg*100}%`;
+}
+
+// ═══════════════════════════════════════════════════════
+// GAME FLOW
+// ═══════════════════════════════════════════════════════
+function doWin(){
+  ST.win=true;ST.on=false;winChord();
+  document.getElementById('winStats').textContent=`9/9 loaded · ${ST.t.toFixed(1)}s · fidelity ${Math.round(ST.coh*100)}%`;
+  document.getElementById('winOv').classList.add('show');
+  document.getElementById('infoPanel').classList.remove('show');
+}
+function doReset(){
+  electrons.forEach((e,i)=>{
+    const ang=(i/9)*TAU+(Math.random()-0.5)*0.4;
+    const rad=CFG.scatter*(0.4+Math.random()*0.6);
+    e.pos.set(Math.cos(ang)*rad,0,Math.sin(ang)*rad*0.5);
+    e.vel.set((Math.random()-0.5)*1.5,0,(Math.random()-0.5)*1.5);
+    e.captured=false;e.wIdx=-1;e.coh=1;e.dead=false;
+    const m=eMeshes[i];
+    m.corM.emissive.setHex(0xff2244);m.corM.color.setHex(0xff4466);m.corM.opacity=1;m.corM.transparent=false;
+    m.iM.uniforms.gCol.value.setHex(0xff3366);m.oM.uniforms.gCol.value.setHex(0xff6688);
+    m.wM.color.setHex(0xff4488);m.lt.color.setHex(0xff3366);m.lt.intensity=1.2;m.grp.visible=true;
+    trailSys[i].mat.uniforms.color.value.setHex(0xff2255);
+  });
+  wells.forEach(w=>{w.occupied=false;w.eIdx=-1;w.cMat.uniforms.occ.value=0;w.lt.intensity=0.4;w.lt.color.setHex(0x2255aa);w.tMat.color.setHex(0x2266bb);w.tMat.opacity=0.08;w.sw.material.color.setHex(0x3388dd);w.sw.material.opacity=0.3;});
+  ghosts.forEach(g=>{scene.remove(g.mesh);g.mesh.geometry.dispose();g.mesh.material.dispose();});
+  ghosts.length=0;
+  ST.t=0;ST.cap=0;ST.win=false;ST.on=true;
+  document.getElementById('capN').innerHTML='0<span style="font-size:18px;opacity:0.4"> / 9</span>';
+  document.getElementById('timerN').textContent='0.0';
+  updGateUI();
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+const clock=new THREE.Clock();
+function loop(){
+  requestAnimationFrame(loop);
+  const t=clock.getElapsedTime();ST.frame++;
+  if(ST.on&&!ST.win){ST.t+=CFG.dt;document.getElementById('timerN').textContent=ST.t.toFixed(1);physics();updAudio();}
+  updVisuals(t);
+  renderer.setRenderTarget(baseRT);renderer.render(scene,camera);
+  renderer.toneMappingExposure=3.0;renderer.setRenderTarget(bloomRT);renderer.render(scene,camera);renderer.toneMappingExposure=1.6;
+  compQuad.material.uniforms.tBase.value=baseRT.texture;compQuad.material.uniforms.tBloom.value=bloomRT.texture;
+  renderer.setRenderTarget(null);renderer.render(compScene,compCam);
+}
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);baseRT.setSize(innerWidth,innerHeight);bloomRT.setSize(innerWidth,innerHeight);});
+
+window.go=async function(mode){
+  ST.mode=mode;initAudio();
+  if(mode==='hand')await initHands();
+  document.getElementById('startOv').classList.add('gone');
+  document.getElementById('infoPanel').classList.add('show');
+  ST.on=true;
+};
+window.restart=function(){
+  document.getElementById('winOv').classList.remove('show');
+  document.getElementById('infoPanel').classList.add('show');
+  doReset();
+};
+loop();
+</script>
+</body>
+</html>

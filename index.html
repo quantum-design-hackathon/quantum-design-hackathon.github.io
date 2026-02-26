@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quantum Design Hackathon</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+  <link rel="manifest" href="favicon/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <nav class="site-nav">
+    <a href="index.html" class="nav-logo">Quantum Design Hackathon</a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="groups.html">Groups</a></li>
+      <li><a href="photos.html">Photos</a></li>
+    </ul>
+  </nav>
+
+  <div class="page">
+
+    <!-- HERO -->
+    <section class="hero">
+      <canvas id="quantum-canvas" aria-hidden="true"></canvas>
+      <div class="hero-content">
+        <div class="hero-eyebrow">February 20th, 2026 &nbsp;@&nbsp; Microsoft Garage</div>
+        <h1 class="hero-title">Quantum Design<br>Hackathon</h1>
+        <p class="hero-sub">
+          One day. Nine teams. An open ended challenge for all!<br>
+          A design sprint challenging participants to make quantum computing tangible — from interactive simulations to theatrical performances.
+        </p>
+        <div class="hero-ctas">
+          <a href="groups.html" class="btn btn--primary">View Projects →</a>
+          <a href="photos.html" class="btn btn--outline">Browse Photos</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="section landing-about">
+      <div class="about-stats">
+        <div class="about-stat">
+          <span class="stat-num">9</span>
+          <span class="stat-label">Teams</span>
+        </div>
+        <div class="about-stat">
+          <span class="stat-num">6</span>
+          <span class="stat-label">Hours</span>
+        </div>
+        <div class="about-stat">
+          <span class="stat-num">80+</span>
+          <span class="stat-label">Attendees</span>
+        </div>
+        <div class="about-stat">
+          <span class="stat-num">1</span>
+          <span class="stat-label">Theatrical Debut</span>
+        </div>
+      </div>
+      <div class="about-body">
+        <p>
+          The Quantum Design Hackathon brought together designers, developers, physicists, and curious minds to explore one question: <em>how can we communicate the quantum world?</em>
+        </p>
+        <p>
+          Teams had a single day to prototype something — a visualization, a musical experience, a game, a performance — that communicates a quantum computing qubit type (or concept) to a broad audience. The results ranged from drag-and-drop circuit simulators to a full audience-participation stage show.
+        </p>
+        <div class="about-actions">
+          <a href="groups.html" class="btn btn--outline">Explore All Submissions →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPONSORS -->
+    <section class="sponsors">
+      <div class="sponsors-meta">
+        A <a href="https://unitary.design/" target="_blank" rel="noopener"><strong>unitaryDESIGN</strong></a> event &nbsp;·&nbsp; Presented by Harmoniqs + Unitary Foundation &nbsp;·&nbsp; With Support From J.P. Morgan
+      </div>
+      <div class="sponsors-row">
+        <div class="sponsor sponsor--harmoniqs">
+          <img src="logos/199011497.png" alt="Harmoniqs" class="sponsor-logo">
+          <span>Harmoniqs</span>
+        </div>
+        <div class="sponsor sponsor--unitary">
+          <img src="logos/UFoundation.png" alt="Unitary Foundation" class="sponsor-logo">
+          <span>Unitary Foundation</span>
+        </div>
+        <div class="sponsor sponsor--microsoft">
+          <img src="logos/Logo-microsoft-transparent-background-PNG.png" alt="Microsoft" class="sponsor-logo">
+          <span>Microsoft</span>
+        </div>
+        <div class="sponsor sponsor--jpmorgan">
+          <img src="logos/jpmorgan-chase-logo-business-bank-morgan-stanley-business.png" alt="J.P. Morgan" class="sponsor-logo">
+          <span>J.P. Morgan</span>
+        </div>
+        <div class="sponsor sponsor--moth">
+          <img src="logos/Moth_Logo_White.webp" alt="Moth Quantum" class="sponsor-logo sponsor-logo--dark">
+          <span>Moth Quantum</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="site-footer">
+    <p>A <a href="https://unitary.design/" target="_blank" rel="noopener"><strong>unitaryDESIGN</strong></a> event presented by Harmoniqs + Unitary Foundation &nbsp;·&nbsp; All submissions released under the <a href="LICENSE">MIT License</a></p>
+  </footer>
+
+  <script>
+    const canvas = document.getElementById('quantum-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [], animId;
+
+    function resize() {
+      canvas.width  = canvas.parentElement.offsetWidth;
+      canvas.height = canvas.parentElement.offsetHeight;
+    }
+
+    function makeParticle() {
+      return {
+        x:  Math.random() * canvas.width,
+        y:  Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        r:  Math.random() * 1.5 + 0.75,
+      };
+    }
+
+    function init() {
+      resize();
+      particles = Array.from({ length: 72 }, makeParticle);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width)  p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.fill();
+
+        for (let j = i + 1; j < particles.length; j++) {
+          const q = particles[j];
+          const dx = q.x - p.x, dy = q.y - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 130) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(q.x, q.y);
+            ctx.strokeStyle = `rgba(0, 0, 0, ${0.07 * (1 - dist / 130)})`;
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          }
+        }
+      }
+      animId = requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', init);
+    init();
+    draw();
+  </script>
+
+</body>
+</html>

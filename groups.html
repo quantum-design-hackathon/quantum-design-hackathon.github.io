@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Groups — Quantum Design Hackathon</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+  <link rel="manifest" href="favicon/site.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <nav class="site-nav">
+    <a href="index.html" class="nav-logo">Quantum Design Hackathon</a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="groups.html" class="active">Groups</a></li>
+      <li><a href="photos.html">Photos</a></li>
+    </ul>
+  </nav>
+
+  <div class="page">
+    <div class="section">
+
+      <div class="section-header">
+        <h1 class="section-title">Team Submissions</h1>
+        <p class="section-sub">Nine teams, eight qubit modalities, one very long day</p>
+      </div>
+
+      <div class="cards-grid">
+
+        <!-- ── TEAM 1 · Transmons ── -->
+        <article class="card">
+          <div class="card-thumb">
+            <img src="thumbnails/team1.png" alt="Team 1 — Transmons preview"
+                 onerror="this.parentElement.classList.add('card-thumb--fallback')">
+          </div>
+          <div class="card-body">
+            <div class="card-meta">
+              <div class="badge-group">
+                <span class="badge badge--video">Video</span>
+              </div>
+              <span class="team-num">Team 1</span>
+            </div>
+            <h2 class="card-title">Superconducting Transmons</h2>
+            <p class="card-desc">A deep dive into superconducting transmon qubits — one of the dominant qubit modalities powering today's quantum computers.</p>
+            <div class="members">
+              <span class="member-chip">Han Qin</span>
+              <span class="member-chip">Samriddhi</span>
+              <span class="member-chip">Senuri</span>
+              <span class="member-chip">Sherly Deng</span>
+              <span class="member-chip">Miguel Palma</span>
+              <span class="member-chip">Obi Nami</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn--primary btn--sm"
+                      data-slides="https://docs.google.com/presentation/d/e/2PACX-1vToQssGDgNpoafMWyS-QhPUnE55Rqz8N3lGIJA4XseBovnW91lhCrLAu_aKT8xqAmvBTt2Com7QADSl/pubembed?start=false&loop=false&delayms=5000">
+                View Slides →
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── TEAM 2 · CAT Qubit ── -->
+        <article class="card">
+          <div class="card-thumb">
+            <img id="team2-thumb" alt="Team 2 — CAT Qubit Visualization preview"
+                 data-thumbs="thumbnails/team2-1.png,thumbnails/team2-2.png"
+                 onerror="this.parentElement.classList.add('card-thumb--fallback')">
+          </div>
+          <div class="card-body">
+            <div class="card-meta">
+              <div class="badge-group">
+                <span class="badge badge--live">Live Site</span>
+                <span class="badge badge--video">Video</span>
+              </div>
+              <span class="team-num">Team 2</span>
+            </div>
+            <h2 class="card-title">CAT Qubit Visualization</h2>
+            <p class="card-desc">An interactive visualization of CAT qubits hosted on Cloudflare Workers — exploring the bosonic noise-biased qubit encoding that keeps Schrödinger's cat very much in superposition.</p>
+            <div class="members">
+              <span class="member-chip">Will Stark</span>
+              <span class="member-chip">Elizabeth Jiang</span>
+              <span class="member-chip">Yuni Jung</span>
+              <span class="member-chip">Amiratabak Bahengam</span>
+              <span class="member-chip">Christina Lu</span>
+            </div>
+            <div class="card-actions">
+              <a href="https://qubitvisualization.willstark-lab.workers.dev/" target="_blank" rel="noopener" class="btn btn--primary btn--sm">View Live Site →</a>
+              <button class="btn btn--outline btn--sm" data-video="team2/Vis.mp4">Watch Video</button>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── TEAM 3 · Surface Codes (no submission) ── -->
+        <article class="card card--empty">
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="team-num">Team 3</span>
+            </div>
+            <h2 class="card-title">Topological / Surface Codes</h2>
+            <p class="card-desc">Nothing here yet — did you work on this project? We'd love to add your submission to the showcase.</p>
+            <div class="card-actions">
+              <a href="https://github.com/quantum-design-hackathon/quantum-design-hackathon.github.io/issues/new?title=Team+3+Submission+%E2%80%94+Topological+%2F+Surface+Codes&body=%23%23+Team+3+Submission%0A%0AHi!+Please+share+your+project+details+and+we%27ll+get+it+added+to+the+showcase.%0A%0A**Project+name%3A**%0A**Description%3A**%0A**Links+(live+site%2C+GitHub%2C+slides%2C+etc.)%3A**%0A**Team+members%3A**%0A%0AFeel+free+to+attach+any+files+(PDFs%2C+videos%2C+etc.)+directly+to+this+issue."
+                 target="_blank" rel="noopener" class="btn btn--outline btn--sm">Submit Your Work →</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── TEAM 3.5 · Quantum Candy ── -->
+        <article class="card card--empty">
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="team-num">Team 3.5</span>
+            </div>
+            <h2 class="card-title">Quantum Candy</h2>
+            <p class="card-desc">Nothing here yet — did you work on this project? We'd love to add your submission to the showcase.</p>
+            <div class="card-actions">
+              <a href="https://github.com/quantum-design-hackathon/quantum-design-hackathon.github.io/issues/new?title=Team+3.5+Submission+%E2%80%94+Quantum+Candy&body=%23%23+Team+3.5+Submission%0A%0AHi!+Please+share+your+project+details+and+we%27ll+get+it+added+to+the+showcase.%0A%0A**Project+name%3A**%0A**Description%3A**%0A**Links+(live+site%2C+GitHub%2C+slides%2C+etc.)%3A**%0A**Team+members%3A**%0A%0AFeel+free+to+attach+any+files+(PDFs%2C+videos%2C+etc.)+directly+to+this+issue."
+                 target="_blank" rel="noopener" class="btn btn--outline btn--sm">Submit Your Work →</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── TEAM 4 · Neutral Atom ── -->
+        <article class="card">
+          <div class="card-thumb">
+            <img src="thumbnails/team4.png" alt="Team 4 — The Rydberg Room preview"
+                 onerror="this.parentElement.classList.add('card-thumb--fallback')">
+          </div>
+          <div class="card-body">
+            <div class="card-meta">
+              <div class="badge-group">
+                <span class="badge badge--live">Live Site</span>
+                <span class="badge badge--pres">Presentation</span>
+              </div>
+              <span class="team-num">Team 4</span>
+            </div>
+            <h2 class="card-title">The Rydberg Room</h2>
+            <p class="card-desc">An interactive exploration of neutral atom qubits — using Rydberg atoms as the building blocks for scalable quantum computing.</p>
+            <div class="members">
+              <span class="member-chip">Vanesa</span>
+              <span class="member-chip">Jeb</span>
+              <span class="member-chip">Grier</span>
+              <span class="member-chip">Jiadai</span>
+              <span class="member-chip">Kwaku</span>
+              <span class="member-chip">Pujarini</span>
+              <span class="member-chip">Taylor</span>
+              <span class="member-chip">Sri Bhuvana Vaisshnavi Dasika</span>
+            </div>
+            <div class="card-actions">
+              <a href="https://rydberg.lovable.app" target="_blank" rel="noopener" class="btn btn--primary btn--sm">Visit The Rydberg Room →</a>
+              <button class="btn btn--outline btn--sm"
+                      data-slides="https://docs.google.com/presentation/d/e/2PACX-1vRGQPBGccb8XuyQfFns_TBM_dwo6jkLF43mIDNuGjCXfWwSq2zjqnqL0WdntL0DO_CkFILB2dmefli-/pubembed?start=false&loop=false&delayms=5000">
+                View Slides →
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── TEAM 5 · Trapped Ions ── -->
+        <article class="card">
+          <div class="card-thumb">
+            <img src="thumbnails/team5.png" alt="Team 5 — The Qubitarium of Trapped Ions preview"
+                 onerror="this.parentElement.classList.add('card-thumb--fallback')">
+          </div>
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="badge badge--theater">Theatrical Performance</span>
+              <span class="team-num">Team 5</span>
+            </div>
+            <h2 class="card-title">The Qubitarium of Trapped Ions</h2>
+            <p class="card-desc">A live six-act audience participation performance — three ions named Dot, Bob, and Sneaky demonstrate trapped-ion quantum computing through voice, movement, and phone lights.</p>
+            <div class="members">
+              <span class="member-chip">Ricky Soto</span>
+              <span class="member-chip">Mahnoor Fatima</span>
+              <span class="member-chip">Carrie Jaquith</span>
+              <span class="member-chip">Jasper Sands</span>
+              <span class="member-chip">Dylan Kawalec</span>
+              <span class="member-chip">Timothy Clark Dauz</span>
+              <span class="member-chip member-chip--star">Alex, age 9 ✦</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn--primary btn--sm"
+                      data-slides="https://docs.google.com/presentation/d/e/2PACX-1vTp4K_Ec8v7VljoUOIBmWSnybzhf3dkEtyfoaPL7-RRllD5rAcSm3QVoC4HNJAtjtzPdT6hk7fKJ91p/pubembed?start=false&loop=false&delayms=5000">
+                View Slides →
+              </button>
+              <button class="btn btn--outline btn--sm" id="open-script">Read Script</button>
+              <a href="team5/team5.pdf" target="_blank" rel="noopener" class="btn btn--ghost btn--sm">PDF</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── TEAM 6 · Photonics ── -->
+        <article class="card">
+          <div class="card-thumb">
+            <img src="thumbnails/team6.png" alt="Team 6 — Photonic Quantum Gate Simulator preview"
+                 onerror="this.parentElement.classList.add('card-thumb--fallback')">
+          </div>
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="badge badge--demo">Interactive Demo</span>
+              <span class="team-num">Team 6</span>
+            </div>
+            <h2 class="card-title">Photonic Quantum Gate Simulator</h2>
+            <p class="card-desc">Drag-and-drop X, H, Z, and NOISE gates onto a photonic qubit circuit and watch quantum states evolve in real time — complete with 3D visualization built in React 19 and Three.js.</p>
+            <div class="members">
+              <span class="member-chip">Antonella Navarro</span>
+              <span class="member-chip">Monica Albornoz</span>
+              <span class="member-chip">Pablo Gnecco</span>
+              <span class="member-chip">Adrian Zhang</span>
+              <span class="member-chip">Zhiquan Lao</span>
+              <span class="member-chip">Jack Beel</span>
+            </div>
+            <div class="card-actions">
+              <a href="team6/hackathon/dist/index.html" target="_blank" rel="noopener" class="btn btn--primary btn--sm">Launch Simulator →</a>
+              <a href="team6/Pres.pdf" target="_blank" rel="noopener" class="btn btn--ghost btn--sm">Presentation</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── TEAM 7 · Silicon Spin ── -->
+        <article class="card">
+          <div class="card-thumb">
+            <img src="thumbnails/team7.png" alt="Team 7 — Silicon Spin Explorer preview"
+                 onerror="this.parentElement.classList.add('card-thumb--fallback')">
+          </div>
+          <div class="card-body">
+            <div class="card-meta">
+              <span class="badge badge--demo">Interactive Demo</span>
+              <span class="team-num">Team 7</span>
+            </div>
+            <h2 class="card-title">Silicon Pulse: Silicon Spin Explorer</h2>
+            <p class="card-desc">A 4-stage educational journey through silicon spin qubits — from 3D crystal visualization and gate voltage trapping to hand-motion quantum gate games.</p>
+            <div class="members">
+              <span class="member-chip">Hannah Zhao</span>
+              <span class="member-chip">Raghav Mysore Vishveshwara</span>
+              <span class="member-chip">Sara Andotra</span>
+              <span class="member-chip">Atsuko Shimizu</span>
+              <span class="member-chip">Ann Mahe</span>
+            </div>
+            <div class="card-actions">
+              <a href="team7/silicon-spin-explorer/index.html" target="_blank" rel="noopener" class="btn btn--primary btn--sm">Explore Site →</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- ── TEAM 8 · Photonics (again!) ── -->
+        <article class="card">
+          <div class="card-thumb">
+            <img id="team8-thumb" alt="Team 8 — PHOTON &amp; Quantum Rescue preview"
+                 data-thumbs="thumbnails/team8-1.png,thumbnails/team8-2.png"
+                 onerror="this.parentElement.classList.add('card-thumb--fallback')">
+          </div>
+          <div class="card-body">
+            <div class="card-meta">
+              <div class="badge-group">
+                <span class="badge badge--live">Live Site</span>
+              </div>
+              <span class="team-num">Team 8</span>
+            </div>
+            <h2 class="card-title">PHOTON & Quantum Rescue</h2>
+            <p class="card-desc">Two teams got photonics! PHOTON & Quantum Rescue brings photonic qubits to life with a live site and an interactive photonics demo game.</p>
+            <div class="members">
+              <span class="member-chip">Eloise Yalovitser</span>
+              <span class="member-chip">Arsh Kaushik</span>
+              <span class="member-chip">Shawn Dai</span>
+              <span class="member-chip">Ilayda Dilek</span>
+              <span class="member-chip">Ethan Feldman</span>
+              <span class="member-chip">Allen Tu</span>
+              <span class="member-chip">Kezia Widjaja</span>
+            </div>
+            <div class="card-actions">
+              <a href="https://www.qubitgo.top" target="_blank" rel="noopener" class="btn btn--outline btn--sm">View Live Site →</a>
+              <a href="https://hazeldragon.github.io/QuantHack/photonic-game" target="_blank" rel="noopener" class="btn btn--outline btn--sm">Photonics Game →</a>
+              <a href="team8/Pres.pdf" target="_blank" rel="noopener" class="btn btn--ghost btn--sm">Presentation</a>
+            </div>
+          </div>
+        </article>
+
+      </div><!-- /cards-grid -->
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <p>Quantum Design Hackathon · All rights remain with respective teams</p>
+  </footer>
+
+  <!-- SCRIPT FLYOUT -->
+  <div id="script-overlay" class="script-overlay" aria-hidden="true"></div>
+
+  <aside id="script-panel" class="script-panel" aria-label="The Qubitarium — Script" aria-hidden="true">
+    <div class="script-panel-header">
+      <div>
+        <p class="script-eyebrow">Team 5 · Trapped Ions</p>
+        <h2 class="script-title">The Qubitarium<br>of Trapped Ions</h2>
+        <p class="script-subtitle">A theatrical performance in six acts</p>
+      </div>
+      <button class="script-close" id="close-script" aria-label="Close script">✕</button>
+    </div>
+
+    <div class="script-body">
+
+      <p class="script-preamble"><strong>Simon</strong> is your narrator and stage director. <strong>Dot, Bob, and Sneaky</strong> are your ions. <em>The audience</em> provides the control fields, the photons, and the measurement.</p>
+
+      <div class="script-act">
+        <h3 class="act-heading"><span class="act-num">I</span> Vacuum &amp; Emergence</h3>
+        <p><em>Simon welcomes the audience to the Qubitarium — a vacuum where three ions are suspended in layered electromagnetic fields.</em></p>
+        <p><strong>Simon says:</strong> <em>"Close your eyes."</em></p>
+        <p><em>In darkness, the three ions move onto the stage. Each stands inside their own circular "layer," representing their position within the trap.</em></p>
+        <ul>
+          <li>Three distinct ions, each suspended within their own invisible field.</li>
+          <li>No chaos. Just presence.</li>
+        </ul>
+        <p class="physics-gloss">The vacuum chamber is established. Ions are confined but not yet initialized.</p>
+      </div>
+
+      <div class="script-act">
+        <h3 class="act-heading"><span class="act-num">II</span> Electromagnetic Rotation</h3>
+        <p><em>The ions oscillate subtly between two orientations.</em></p>
+        <p><strong>Simon says:</strong> <em>"Left side of the room — sing C. Right side — sing G."</em></p>
+        <p><em>"These are your two basis states."</em></p>
+        <p>The sustained harmonics create a control field. The ions begin rotating in place — shifting posture between two alignments.</p>
+        <ul>
+          <li>They are not choosing.</li>
+          <li>They are <em>resonating</em> between two control fields.</li>
+        </ul>
+        <p class="physics-gloss">Control pulses rotate the qubit state.</p>
+      </div>
+
+      <div class="script-act">
+        <h3 class="act-heading"><span class="act-num">III</span> Optical Pumping</h3>
+        <p><em>The ions are still moving slightly.</em></p>
+        <p><strong>Simon says:</strong> <em>"Turn on your phone flashlights and point them at the ions."</em></p>
+        <p><em>The audience illuminates the stage — each phone a photon source.</em></p>
+        <p>Gradually, the ions stop jumping. They become still. Initialized into a known ground state.</p>
+        <ul>
+          <li>Stabilized — but <strong>not yet entangled.</strong></li>
+        </ul>
+        <p class="physics-gloss">Photon interaction optically pumps the ions into their ground state.</p>
+      </div>
+
+      <div class="script-act">
+        <h3 class="act-heading"><span class="act-num">IV</span> Rotation Pulse</h3>
+        <p><strong>Simon says:</strong> <em>"Imagine you are still singing C and G."</em></p>
+        <p><em>Table 5 sharply raises their phone lights in unison — a sudden, visible pulse.</em></p>
+        <p><strong>Simon says:</strong> <em>"Tilt your phones right…"</em></p>
+        <p><strong>Simon says:</strong> <em>"Tilt your phones left."</em></p>
+        <p><em>Two ions begin a slow, controlled circular walk toward each other.</em></p>
+        <p class="physics-gloss">A pulse drives coherent rotation on the Bloch sphere.</p>
+      </div>
+
+      <div class="script-act">
+        <h3 class="act-heading"><span class="act-num">V</span> Entanglement</h3>
+        <p><em>Two ions pair and begin synchronized circles — ring around the rosy.</em></p>
+        <p>Their movements mirror each other precisely. If one shifts, the other shifts. They are now <strong>coupled.</strong></p>
+        <p class="physics-gloss">Entangled qubits sharing a joint quantum state.</p>
+      </div>
+
+      <div class="script-act">
+        <h3 class="act-heading"><span class="act-num">VI</span> Measurement</h3>
+        <p><em>An audience participant picks a state out of a hat.</em></p>
+        <p><em>They walk between the entangled ions and announce their choice aloud:</em> <strong>"C"</strong> or <strong>"G."</strong></p>
+        <p><em>The ions release hands and form a C or G with their arms — YMCA style.</em></p>
+        <ul>
+          <li>Measurement complete.</li>
+          <li>State resolved.</li>
+          <li><strong>No more blending.</strong></li>
+        </ul>
+        <p class="physics-gloss">Measurement collapses the qubit into one eigenstate.</p>
+      </div>
+
+    </div><!-- /script-body -->
+  </aside>
+
+  <!-- MEDIA MODAL (video + slides) -->
+  <dialog id="video-modal">
+    <div class="modal-inner">
+      <button class="modal-close" id="modal-close-btn" aria-label="Close">✕</button>
+      <video id="modal-video" controls preload="none"></video>
+      <iframe id="modal-slides" allowfullscreen title="Slides presentation"></iframe>
+    </div>
+  </dialog>
+
+  <script>
+    // Random thumbnails
+    document.querySelectorAll('[data-thumbs]').forEach(img => {
+      const opts = img.dataset.thumbs.split(',');
+      img.src = opts[Math.floor(Math.random() * opts.length)];
+    });
+
+    // Script flyout
+    const scriptPanel   = document.getElementById('script-panel');
+    const scriptOverlay = document.getElementById('script-overlay');
+
+    function openScript() {
+      scriptPanel.classList.add('open');
+      scriptOverlay.classList.add('open');
+      scriptPanel.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeScript() {
+      scriptPanel.classList.remove('open');
+      scriptOverlay.classList.remove('open');
+      scriptPanel.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('open-script').addEventListener('click', openScript);
+    document.getElementById('close-script').addEventListener('click', closeScript);
+    scriptOverlay.addEventListener('click', closeScript);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeScript(); });
+
+    // Media modal
+    const modal      = document.getElementById('video-modal');
+    const video      = document.getElementById('modal-video');
+    const slides     = document.getElementById('modal-slides');
+    const closeBtn   = document.getElementById('modal-close-btn');
+
+    function openModal(showVideo) {
+      video.style.display  = showVideo ? 'block' : 'none';
+      slides.style.display = showVideo ? 'none'  : 'block';
+      modal.showModal();
+    }
+
+    document.querySelectorAll('[data-video]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        video.src = btn.dataset.video;
+        openModal(true);
+      });
+    });
+
+    document.querySelectorAll('[data-slides]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        slides.src = btn.dataset.slides;
+        openModal(false);
+      });
+    });
+
+    closeBtn.addEventListener('click', () => modal.close());
+
+    modal.addEventListener('click', e => {
+      if (e.target === modal) modal.close();
+    });
+
+    modal.addEventListener('close', () => {
+      video.pause();
+      video.src  = '';
+      slides.src = '';
+    });
+  </script>
+
+</body>
+</html>

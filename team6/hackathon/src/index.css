@@ -1,0 +1,117 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-bg-primary: #08080f;
+  --color-bg-secondary: #0f0f1a;
+  --color-bg-card: #14142a;
+  --color-border-glow: #1a1a3e;
+  --color-quantum-blue: #3b82f6;
+  --color-quantum-red: #ef4444;
+  --color-quantum-purple: #a855f7;
+  --color-classical-yellow: #fbbf24;
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #475569;
+  --font-display: 'Orbitron', monospace;
+  --font-body: 'Inter', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Sci-fi grid overlay */
+.sci-fi-grid {
+  background-image:
+    linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Glow effects */
+.glow-blue {
+  box-shadow:
+    0 0 20px rgba(59, 130, 246, 0.4),
+    0 0 60px rgba(59, 130, 246, 0.2),
+    0 0 100px rgba(59, 130, 246, 0.1),
+    inset 0 0 20px rgba(59, 130, 246, 0.1);
+}
+
+.glow-red {
+  box-shadow:
+    0 0 20px rgba(239, 68, 68, 0.4),
+    0 0 60px rgba(239, 68, 68, 0.2),
+    0 0 100px rgba(239, 68, 68, 0.1),
+    inset 0 0 20px rgba(239, 68, 68, 0.1);
+}
+
+.glow-purple {
+  box-shadow:
+    0 0 20px rgba(168, 85, 247, 0.5),
+    0 0 60px rgba(168, 85, 247, 0.3),
+    0 0 100px rgba(168, 85, 247, 0.15),
+    inset 0 0 20px rgba(168, 85, 247, 0.15);
+}
+
+.glow-yellow {
+  filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.6)) drop-shadow(0 0 40px rgba(251, 191, 36, 0.3));
+}
+
+/* Button hover glow */
+.btn-gate {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-gate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.btn-gate:hover::before {
+  opacity: 1;
+}
+
+.btn-gate:active {
+  transform: scale(0.97);
+}
+
+/* Scanline overlay */
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.scanline-overlay::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.08), transparent);
+  animation: scanline 8s linear infinite;
+  pointer-events: none;
+  z-index: 100;
+}
